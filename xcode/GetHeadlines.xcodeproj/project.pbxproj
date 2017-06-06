@@ -17,11 +17,25 @@
 		00B9955A1B128DF400A5C623 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B995581B128DF400A5C623 /* IOKit.framework */; };
 		00B9955B1B128DF400A5C623 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B995591B128DF400A5C623 /* IOSurface.framework */; };
 		4665ADB41EDDFEE900196596 /* libtwitcurl.so.1.0 in Frameworks */ = {isa = PBXBuildFile; fileRef = 4665ADB31EDDFEE900196596 /* libtwitcurl.so.1.0 */; };
+		4665ADB71EE7788700196596 /* keys.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4665ADB61EE7788700196596 /* keys.txt */; };
 		5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B10EAFCA74003A9687 /* CoreVideo.framework */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		94DFE496BFCA4C34AC014980 /* GetHeadlinesApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E0CB999C67AB4391B6052952 /* GetHeadlinesApp.cpp */; };
 		E83C0C30EF1E4431B603298E /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = B8296B492BD04CE7BD69B5F4 /* CinderApp.icns */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4665ADB51EE7780D00196596 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				4665ADB71EE7788700196596 /* keys.txt in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		006D720219952D00008149E2 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -38,6 +52,7 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		45D6324810E24262963EE2E1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4665ADB31EDDFEE900196596 /* libtwitcurl.so.1.0 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtwitcurl.so.1.0; path = ../../../../../twitcurl/libtwitcurl/libtwitcurl.so.1.0; sourceTree = "<group>"; };
+		4665ADB61EE7788700196596 /* keys.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keys.txt; sourceTree = "<group>"; };
 		5323E6B10EAFCA74003A9687 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		8D1107320486CEB800E47090 /* GetHeadlines.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetHeadlines.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8296B492BD04CE7BD69B5F4 /* CinderApp.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = CinderApp.icns; path = ../resources/CinderApp.icns; sourceTree = "<group>"; };
@@ -122,6 +137,7 @@
 		29B97314FDCFA39411CA2CEA /* GetHeadlines */ = {
 			isa = PBXGroup;
 			children = (
+				4665ADB61EE7788700196596 /* keys.txt */,
 				4665ADB21EDDFE5A00196596 /* twitcurl */,
 				01B97315FEAEA392516A2CEA /* Blocks */,
 				29B97315FDCFA39411CA2CEA /* Headers */,
@@ -178,6 +194,7 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
+				4665ADB51EE7780D00196596 /* CopyFiles */,
 			);
 			buildRules = (
 			);
