@@ -18,3 +18,14 @@ Changed `LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib` to `LDFLAGS += -rpat
 	4. Added new group to project and in that group added the lib libtwitcurl.so.1.0 [source](https://stackoverflow.com/questions/16078512/undefined-symbols-for-architecture-x86-64-error-when-linking-opencv-in-xcode)
    5. Comment out this line: `twit.setTwitterApiType(twitCurlTypes::eTwitCurlApiFormatJson);`
    6. Add `string resp;` before the if clause in setup
+
+   
+ ## Other Notes
+ There is a file keys.txt which reads in the Twitter API oauth keys, for security reasons this is not included in the repo. You will need to create this file and have in this order:
+ 	
+ 	1. consumer key
+ 	2. consumer secret
+ 	3. token key
+ 	4. token secret
+
+ Have each key on a separate line, be sure there are no added characters (ie don't number each key).
