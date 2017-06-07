@@ -9,6 +9,8 @@
 #include "jsoncpp/json.h"
 #include "twitcurl.h"
 
+#include <fstream>
+
 using namespace ci;
 using namespace ci::app;
 using namespace std;
@@ -32,28 +34,33 @@ class GetHeadlinesApp : public App {
     gl::TextureFontRef font;
     
     twitCurl twit;
+    
+    string keys[4];     // hold keys for Twitter API oauth
 };
 
 void GetHeadlinesApp::setup()
 {
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
-//    font = gl::TextureFont::create(Font(loadFile("acmesa.TTF"), 16));
-    cout << "def working2" << endl;
-
-    //Optional, i'm locked behind a corporate firewall, send help!
-//    twit.setProxyServerIp(std::string("ip.ip.ip.ip"));
-//    twit.setProxyServerPort(std::string("port"));
     
-    //Obviously we'll replace these strings
-    twit.getOAuth().setConsumerKey(std::string("R2lam0vepQjqSouiljoThU4fi"));
-twit.getOAuth().setConsumerSecret(std::string("FbhZRfFNF3mLmnwWW1GHSdJUuZgMIkAFeErrn3x6aMeQvzmtER"));
-    twit.getOAuth().setOAuthTokenKey(std::string("382795211-5EvULyAAxAcVUMBdKuVtMLJMq3uRgb4jdmZZqOVX"));
-    twit.getOAuth().setOAuthTokenSecret(std::string("9K0wDoz9vWFr8vSFsFkxrwytf1aBoBJANFGlEZx2oqkPg"));
+    int count = 0;
+    string line;
+    ifstream myfile ("keys.txt");
+    if (myfile.is_open())
+    {
+        while ( getline (myfile,line) )
+        {
+            keys[count] = line;
+            count++;
+        }
+        myfile.close();
+    }
+    else cout << "Unable to open file";
     
-    //We like Json, he's a cool guy, but we could've used XML too, FYI.
-    // not working
-//    twit.setTwitterApiType(twitCurlTypes::eTwitCurlApiFormatJson);
+    twit.getOAuth().setConsumerKey(keys[0]);
+    twit.getOAuth().setConsumerSecret(keys[1]);
+    twit.getOAuth().setOAuthTokenKey(keys[2]);
+    twit.getOAuth().setOAuthTokenSecret(keys[3]);
     
     string resp;
     
