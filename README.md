@@ -20,7 +20,7 @@ Changed `LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib` to `LDFLAGS += -rpat
    6. Add `string resp;` before the if clause in setup
 
    
- ## Other Notes
+## Other Notes
  There is a file keys.txt which reads in the Twitter API oauth keys, for security reasons this is not included in the repo. You will need to create this file and have in this order:
  	
  	1. consumer key
@@ -29,3 +29,17 @@ Changed `LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib` to `LDFLAGS += -rpat
  	4. token secret
 
  Have each key on a separate line, be sure there are no added characters (ie don't number each key).
+
+###Adding text file to project
+
+1. Select your project in XCode
+2. Click on Build Phases
+3. Click on the '+' button
+4. Click on New Copy Files Build Phase
+5. Select Product Directory
+6. Click the '+' to add your file
+7. Click Add Other
+8. Select your keys.txt file (this file can be wherever) and click Open
+9. Check Copy items... and click Create folder references... and hit finish
+
+[source](https://stackoverflow.com/questions/23438393/new-to-xcode-cant-open-files-in-c)
