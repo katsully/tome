@@ -1,4 +1,4 @@
-##Installing Twitcurl
+## Installing Twitcurl
 1. Cloned this [repo](https://github.com/swatkat/twitcurl)
 2. Followed this [instructions](https://code.google.com/archive/p/twitcurl/wikis/WikiHowToUseTwitcurlLibrary.wiki)
  (sorta - here's how I did it) 
@@ -30,7 +30,7 @@ Changed `LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib` to `LDFLAGS += -rpat
 
  Have each key on a separate line, be sure there are no added characters (ie don't number each key).
 
-###Adding text file to project
+### Adding text file to project
 
 1. Select your project in XCode
 2. Click on Build Phases
