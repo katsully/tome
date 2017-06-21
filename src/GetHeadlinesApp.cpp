@@ -11,6 +11,9 @@
 
 #include <fstream>
 
+// won't always need this - just for debugging
+#include <typeinfo>
+
 using namespace ci;
 using namespace ci::app;
 using namespace std;
@@ -34,6 +37,7 @@ class GetHeadlinesApp : public App {
     gl::TextureFontRef font;
     
     twitCurl twit;
+    vector<std::string> tweets;
     
     string keys[4];     // hold keys for Twitter API oauth
 };
@@ -67,30 +71,23 @@ void GetHeadlinesApp::setup()
     if(twit.accountVerifyCredGet())
     {
         twit.getLastWebResponse(resp);
-        console() << resp << std::endl;
-        if(twit.search(string("itp")))
-        {
+        vector<string> names = {"realDonaldTrump", "FoxNews"};
+        if(twit.userLookup(names, false)){
             twit.getLastWebResponse(resp);
+            std::cout << typeid(resp).name() << '\n';
+            std::ofstream file("filename.json");
+            file << resp;
+            file.close();
             
+            Json::Reader reader;
             Json::Value root;
-            Json::Reader json;
-            bool parsed = json.parse(resp, root, false);
-            
-            if(!parsed)
-            {
-                console() << json.getFormattedErrorMessages() << endl;
+            std::ifstream inputFile("filename.json");
+            inputFile >> root;
+            for(auto s : root){
+                std::string t = "@" + s["screen_name"].asString() + ":" + s["status"]["text"].asString();
+                tweets.push_back(t);
             }
-            else
-            {
-                const Json::Value results = root["results"];
-                for(int i=0;i<results.size();++i)
-                {
-                    temp.clear();
-                    const string content = results[i]["text"].asString();
-                    temp = split(content, ' ');
-                    words.insert(words.end(), temp.begin(), temp.end());
-                }
-            }
+            inputFile.close();
         }
     }
     else
@@ -117,7 +114,12 @@ void GetHeadlinesApp::update()
 
 void GetHeadlinesApp::draw()
 {
-	gl::clear( Color( 0, 0, 0 ) ); 
+    gl::clear( Color( 0, 0, 0 ) );
+    int counter = 25;
+    for(std::string s : tweets) {
+        gl::drawString(s, vec2(10, counter));
+        counter+=25;
+    }
 }
 
 CINDER_APP( GetHeadlinesApp, RendererGl )

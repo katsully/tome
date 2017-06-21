@@ -34,3 +34,4 @@
 *.xcuserstate
 
 keys.txt
+*.json
