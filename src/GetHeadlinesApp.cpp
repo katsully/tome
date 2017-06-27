@@ -24,22 +24,23 @@ class GetHeadlinesApp : public App {
     
 	void setup() override;
 	void update() override;
+    void keyDown( KeyEvent event ) override;
 	void draw() override;
     
     void getTweets(string &resp);
     
     //We'll parse our twitter content into these
-    vector<string> temp;
-    vector<string> words;
-    vector<string> names;
+    string tempKeyword;
+    vector<string> mKeywords;
+    vector<string> mAccounts;
     
     //For drawing our text
     gl::TextureFont::DrawOptions fontOpts;
     gl::TextureFontRef mFont;
     
-    // TODO ADD params
     // TODO add text box to search for particular term from networks we are already searching
-    params::InterfaceGl	mParams;
+    params::InterfaceGlRef mParams;
+    bool mShowParams = true;
     
     twitCurl twit;
     vector<std::string> tweets;
@@ -59,11 +60,21 @@ void GetHeadlinesApp::setup()
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
     
+    // TODO -  tv networks & donald trump
+    mAccounts = {"realDonaldTrump", "FoxNews"};
+    
+    // TODO - these should prob live in a sep file
+    mKeywords = {"Donald", "Trump", "Flint", "Sessions", "Healthcare"};
+    
+    // Create the interface and give it a name
+    mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
+    
+    // Set up some basic parameters
+    mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword);} );
+    mParams->addParam("Show Params", &mShowParams).key("p");
+    
     // TODO - change fonts
     mFont = gl::TextureFont::create(Font( "Times New Roman", 32 ));
-    
-    // TODO -  tv networks & donald trump
-    names = {"realDonaldTrump", "FoxNews"};
     
     // TODO - list of keywords to futher curate tweets
     // TODO - get lots more tweets
@@ -92,7 +103,7 @@ void GetHeadlinesApp::setup()
     if(twit.accountVerifyCredGet())
     {
         // TODO - make go through ea networks timeline instead?
-        if(twit.userLookup(names, false)){
+        if(twit.userLookup(mAccounts, false)){
             twit.getLastWebResponse(resp);
             Json::Value root;
             Json::Reader json;
@@ -141,6 +152,12 @@ void GetHeadlinesApp::update()
 {
 }
 
+void GetHeadlinesApp::keyDown( KeyEvent event ) {
+    for(string s: mKeywords) {
+        cout << s << endl;
+    }
+}
+
 void GetHeadlinesApp::draw()
 {
     // TODO - get flag image for reference
@@ -157,6 +174,9 @@ void GetHeadlinesApp::draw()
         gl::drawString(s, vec2(10, counter));
         counter+=25;
     }
+    
+    // Draw the interface
+    if(mShowParams) { mParams->draw(); }
 }
 
 // TODO - clickable app that can work on any comp
