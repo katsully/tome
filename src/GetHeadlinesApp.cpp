@@ -9,7 +9,6 @@
 #include "jsoncpp/json.h"
 #include "twitcurl.h"
 #include "cinder/params/Params.h"
-#include <boost/algorithm/string.hpp>
 
 #include <fstream>
 #include <regex>
@@ -22,7 +21,6 @@ class GetHeadlinesApp : public App {
   public:
 	void setup() override;
 	void update() override;
-    void keyDown( KeyEvent event ) override;
 	void draw() override;
     
     void getTweets(string &resp);
@@ -102,10 +100,8 @@ void GetHeadlinesApp::setup()
     
         inputFile.close();
     }
-    
     else cout << "Unable to open json file";
 
-    
     // Create the interface and give it a name
     mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
     
@@ -117,6 +113,7 @@ void GetHeadlinesApp::setup()
     mFont = Font( "Avenir", 36 );
     mTextureFont = gl::TextureFont::create( mFont );
     
+    // TODO - shouldn't need a counter
     int count = 0;
     string line;
     ifstream myfile ("keys.txt");
@@ -159,6 +156,8 @@ void GetHeadlinesApp::setup()
                         if (t.substr(0,2) == "RT") {
                             continue;
                         }
+                        // TODO - add param to remove keyword query
+                        
                         // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
                         for(string k: mKeywords){
                             if (t.find(k) != std::string::npos) {
@@ -182,23 +181,12 @@ void GetHeadlinesApp::setup()
     }
 }
 
-inline std::string trim(std::string& str)
-{
-    str.erase(0, str.find_first_not_of(' '));       //prefixing spaces
-    str.erase(str.find_last_not_of(' ')+1);         //surfixing spaces
-    return str;
-}
-
 // TODO - make this respond to an update button in params
 void GetHeadlinesApp::getTweets(string &resp)
 {
 }
 
 void GetHeadlinesApp::update()
-{
-}
-
-void GetHeadlinesApp::keyDown( KeyEvent event )
 {
 }
 
@@ -211,8 +199,8 @@ void GetHeadlinesApp::draw()
     // TODO - fit into height & width via andrew
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    // TODO - logo and then tweet
-    // TODO - figure out how to calculate width of tweet
+    // TODO - figure out how to calculate width of tweet (Sterling?)
+    // TODO - bring in new logos & flag from Andew
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() / 2 - 20;
         for(string s1: s) {
@@ -238,4 +226,13 @@ void GetHeadlinesApp::draw()
 // TODO - clickable app that can work on any comp
 // TODO - try with a quicktime block
 
-CINDER_APP( GetHeadlinesApp, RendererGl )
+CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
+    
+    // have the app run full screen in second monitor
+    vector<DisplayRef> displays = Display::getDisplays();
+    
+    if (displays.size() > 1) {
+        
+        settings->setDisplay(displays[1]);
+    }
+})
