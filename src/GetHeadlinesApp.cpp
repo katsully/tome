@@ -46,9 +46,10 @@ class GetHeadlinesApp : public App {
     
     twitCurl twit;
     vector<vector<string>> mTweets;
+    bool mUseKeywords = true;
     
     // hold keys for Twitter API oauth
-    string keys[4];
+    vector<string> keys;
     
     int stripeHeight;
     int widthPos = 0;
@@ -81,7 +82,7 @@ void GetHeadlinesApp::setup()
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("lastweek.png"))));
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("dt.jpg"))));
     
-    // TODO -  tv networks & donald trump
+    // TODO -  tv networks & logos from Andrew
 
     
     // read in accounts and keywords
@@ -107,22 +108,20 @@ void GetHeadlinesApp::setup()
     
     // Set up some basic parameters
     mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword);} );
+    mParams->addParam("Filter", &mUseKeywords).key("k");
     mParams->addParam("Show Params", &mShowParams).key("p");
     
     // Font used on news ticker for Fox
     mFont = Font( "Avenir", 36 );
     mTextureFont = gl::TextureFont::create( mFont );
     
-    // TODO - shouldn't need a counter
-    int count = 0;
     string line;
     ifstream myfile ("keys.txt");
     if (myfile.is_open())
     {
         while ( getline (myfile,line) )
         {
-            keys[count] = line;
-            count++;
+            keys.push_back(line);
         }
         myfile.close();
     }
@@ -139,7 +138,7 @@ void GetHeadlinesApp::setup()
     {
         for(string a: mAccounts) {
             if(twit.timelineUserGet(true, false, 40, a)) {
-                cout << a << endl;
+//                cout << a << endl;
                 vector<string> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -156,17 +155,23 @@ void GetHeadlinesApp::setup()
                         if (t.substr(0,2) == "RT") {
                             continue;
                         }
-                        // TODO - add param to remove keyword query
-                        
                         // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
-                        for(string k: mKeywords){
-                            if (t.find(k) != std::string::npos) {
-                                size_t end2 = t.find("http");
-                                string editedTweet = t.substr(0, end2);
-                                cout << editedTweet << endl;
-                                temp.push_back(editedTweet);
-                                break;
+                        
+                        // only filter if using keywords
+                        if(mUseKeywords) {
+                            for(string k: mKeywords){
+                                if (t.find(k) != std::string::npos) {
+                                    size_t end2 = t.find("http");
+                                    string editedTweet = t.substr(0, end2);
+                                    //   cout << editedTweet << endl;
+                                    temp.push_back(editedTweet);
+                                    break;
+                                }
                             }
+                        } else {
+                            size_t end2 = t.find("http");
+                            string editedTweet = t.substr(0, end2);
+                            temp.push_back(editedTweet);
                         }
                     }
                 }
@@ -181,7 +186,7 @@ void GetHeadlinesApp::setup()
     }
 }
 
-// TODO - make this respond to an update button in params
+// TODO - make this respond to an update button & don't use filter button & new keyword in params
 void GetHeadlinesApp::getTweets(string &resp)
 {
 }
@@ -196,13 +201,12 @@ void GetHeadlinesApp::draw()
     gl::draw( mBackground, getWindowBounds() );
     int counter = 0;
     
-    // TODO - fit into height & width via andrew
     // TODO - send to Syphon
     // TODO - Syphon to isadora
     // TODO - figure out how to calculate width of tweet (Sterling?)
-    // TODO - bring in new logos & flag from Andew
+    // TODO - bring in new logos from Andew
     for(vector<string> s : mTweets) {
-        (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() / 2 - 20;
+        (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(string s1: s) {
             gl::color(Color::white());
             Rectf logoRect(widthPos-widthPosOffset, counter*stripeHeight+5, widthPos-widthPosOffset+50, counter*stripeHeight+stripeHeight);
@@ -215,8 +219,10 @@ void GetHeadlinesApp::draw()
     }
     
     widthPosOffset+=2;
+    
+    // draw stars over tweets to create illusion that it's getting cut off
     gl::color(Color::white());
-    Rectf drawRect( 0, 0, getWindowWidth()*.48, getWindowHeight()*.55 );
+    Rectf drawRect( -1, -1, getWindowWidth()*.4, getWindowHeight()*.54 );
     gl::draw(mStars, drawRect);
     
     // Draw the interface
@@ -228,7 +234,7 @@ void GetHeadlinesApp::draw()
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
-    // have the app run full screen in second monitor
+    // have the app run full screen in second monitor (if available)
     vector<DisplayRef> displays = Display::getDisplays();
     
     if (displays.size() > 1) {
