@@ -9,6 +9,7 @@
 #include "jsoncpp/json.h"
 #include "twitcurl.h"
 #include "cinder/params/Params.h"
+#include <boost/algorithm/string.hpp>
 
 #include <fstream>
 #include <regex>
@@ -34,9 +35,9 @@ class GetHeadlinesApp : public App {
     vector<gl::TextureRef> mLogos;
     
     //We'll parse our twitter content into these
-    string tempKeyword;
-    vector<string> mKeywords;
-    vector<string> mAccounts;
+    std::string tempKeyword;
+    vector<std::string> mKeywords;
+    vector<std::string> mAccounts;
     
     //For drawing our text
     Font mFont;
@@ -78,12 +79,32 @@ void GetHeadlinesApp::setup()
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("nbc.png"))));
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("cbs.jpg"))));
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("blaze.png"))));
+    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("dailyshow.jpg"))));
+    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("lastweek.png"))));
     mLogos.push_back(gl::Texture::create( loadImage( loadAsset("dt.jpg"))));
     
     // TODO -  tv networks & donald trump
-    // TODO - these should prob live in a sep file
-    mAccounts = {"FoxNews", "CNNPolitics", "MSNBC", "ABC", "NBCNews", "CBSNews", "theblaze", "realDonaldTrump"};
-    mKeywords = {"Donald", "Trump", "Flint", "Sessions", "Healthcare", "POTUS", "Syrians", "Syria", "Senate", "GOP", "Republicans", "Democrats", "President", "health care", "president", "ObamaCare", "Obama", "N. Korea", "Senators", "Congress", "Putin", "Hillary", "Pelosi", "McConnell", "China"};
+
+    
+    // read in accounts and keywords
+    Json::Value root;
+    std::ifstream inputFile("accounts.json");
+    
+    if (inputFile.is_open()) {
+        inputFile >> root;
+    
+        for(auto a: root["accounts"]){
+            mAccounts.push_back(a.asString());
+        }
+        for(auto k: root["keywords"]){
+            mKeywords.push_back(k.asString());
+        }
+    
+        inputFile.close();
+    }
+    
+    else cout << "Unable to open json file";
+
     
     // Create the interface and give it a name
     mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
@@ -92,6 +113,7 @@ void GetHeadlinesApp::setup()
     mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword);} );
     mParams->addParam("Show Params", &mShowParams).key("p");
     
+    // Font used on news ticker for Fox
     mFont = Font( "Avenir", 36 );
     mTextureFont = gl::TextureFont::create( mFont );
     
@@ -107,7 +129,7 @@ void GetHeadlinesApp::setup()
         }
         myfile.close();
     }
-    else cout << "Unable to open file";
+    else cout << "Unable to open key file";
     
     twit.getOAuth().setConsumerKey(keys[0]);
     twit.getOAuth().setConsumerSecret(keys[1]);
@@ -119,7 +141,7 @@ void GetHeadlinesApp::setup()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-            if(twit.timelineUserGet(true, false, 20, a)) {
+            if(twit.timelineUserGet(true, false, 40, a)) {
                 cout << a << endl;
                 vector<string> temp;
                 twit.getLastWebResponse(resp);
@@ -130,10 +152,13 @@ void GetHeadlinesApp::setup()
                 if(!parsed) {
                     console() << json.getFormattedErrorMessages() << endl;
                 } else {
-                    const Json::Value results = root;
                     for(auto s: root)
                     {
                         std::string t = s["text"].asString();
+                        // get rid of retweets
+                        if (t.substr(0,2) == "RT") {
+                            continue;
+                        }
                         // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
                         for(string k: mKeywords){
                             if (t.find(k) != std::string::npos) {
@@ -155,6 +180,13 @@ void GetHeadlinesApp::setup()
         twit.getLastCurlError(resp);
         console() << resp << endl;
     }
+}
+
+inline std::string trim(std::string& str)
+{
+    str.erase(0, str.find_first_not_of(' '));       //prefixing spaces
+    str.erase(str.find_last_not_of(' ')+1);         //surfixing spaces
+    return str;
 }
 
 // TODO - make this respond to an update button in params
@@ -194,7 +226,7 @@ void GetHeadlinesApp::draw()
         counter++;
     }
     
-    widthPosOffset++;
+    widthPosOffset+=2;
     gl::color(Color::white());
     Rectf drawRect( 0, 0, getWindowWidth()*.48, getWindowHeight()*.55 );
     gl::draw(mStars, drawRect);
@@ -204,5 +236,6 @@ void GetHeadlinesApp::draw()
 }
 
 // TODO - clickable app that can work on any comp
+// TODO - try with a quicktime block
 
 CINDER_APP( GetHeadlinesApp, RendererGl )
