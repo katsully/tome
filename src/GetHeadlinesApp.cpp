@@ -9,9 +9,7 @@
 #include "jsoncpp/json.h"
 #include "twitcurl.h"
 #include "cinder/params/Params.h"
-
 #include <fstream>
-#include <regex>
 
 using namespace ci;
 using namespace ci::app;
@@ -33,9 +31,9 @@ class GetHeadlinesApp : public App {
     vector<gl::TextureRef> mLogos;
     
     //We'll parse our twitter content into these
-    std::string tempKeyword;
-    vector<std::string> mKeywords;
-    vector<std::string> mAccounts;
+    string tempKeyword;
+    vector<string> mKeywords;
+    vector<string> mAccounts;
     
     //For drawing our text
     Font mFont;
@@ -58,6 +56,7 @@ class GetHeadlinesApp : public App {
 
 void GetHeadlinesApp::setup()
 {
+    // TODO - ALL variables' values (including file names) should come from JSON file
     setFullScreen(true);
     
     stripeHeight = getWindowHeight()/13;
@@ -70,30 +69,18 @@ void GetHeadlinesApp::setup()
     // load just the stars
     mStars = gl::Texture::create( loadImage( loadAsset("flag2.jpg")));
     
-    // load logos
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("fox.jpg"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("cnn.jpg"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("msnbc.jpg"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("abc.png"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("nbc.png"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("cbs.jpg"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("blaze.png"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("dailyshow.jpg"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("lastweek.png"))));
-    mLogos.push_back(gl::Texture::create( loadImage( loadAsset("dt.jpg"))));
-    
-    // TODO -  tv networks & logos from Andrew
-
-    
     // read in accounts and keywords
     Json::Value root;
-    std::ifstream inputFile("accounts.json");
+    ifstream inputFile("accounts.json");
     
     if (inputFile.is_open()) {
         inputFile >> root;
     
         for(auto a: root["accounts"]){
-            mAccounts.push_back(a.asString());
+            // load twitter handles
+            mAccounts.push_back(a["name"].asString());
+            // load logos
+            mLogos.push_back(gl::Texture::create( loadImage (loadAsset(a["logo"].asString() ))));
         }
         for(auto k: root["keywords"]){
             mKeywords.push_back(k.asString());
@@ -117,6 +104,7 @@ void GetHeadlinesApp::setup()
     
     string line;
     ifstream myfile ("keys.txt");
+    // TODO - prob don't need this while loop, should pull everything as a list
     if (myfile.is_open())
     {
         while ( getline (myfile,line) )
@@ -156,6 +144,8 @@ void GetHeadlinesApp::setup()
                             continue;
                         }
                         // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
+                        
+                        // TODO - trump doesn't need a filter
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -204,7 +194,7 @@ void GetHeadlinesApp::draw()
     // TODO - send to Syphon
     // TODO - Syphon to isadora
     // TODO - figure out how to calculate width of tweet (Sterling?)
-    // TODO - bring in new logos from Andew
+    // TODO - bring in new logos from Andrew
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(string s1: s) {
@@ -231,6 +221,7 @@ void GetHeadlinesApp::draw()
 
 // TODO - clickable app that can work on any comp
 // TODO - try with a quicktime block
+// TODO - where should the file be saved? (same place as video assets, maybe a Google Drive folder
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
