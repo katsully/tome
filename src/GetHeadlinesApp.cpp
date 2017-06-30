@@ -21,7 +21,7 @@ class GetHeadlinesApp : public App {
 	void update() override;
 	void draw() override;
     
-    void getTweets(string &resp);
+    void getTweets();
     
     // background image
     gl::TextureRef mBackground;
@@ -40,7 +40,7 @@ class GetHeadlinesApp : public App {
     gl::TextureFontRef	mTextureFont;
     
     params::InterfaceGlRef mParams;
-    bool mShowParams = false;
+    bool mShowParams = true;
     
     twitCurl twit;
     vector<vector<string>> mTweets;
@@ -52,29 +52,31 @@ class GetHeadlinesApp : public App {
     int stripeHeight;
     int widthPos = 0;
     int widthPosOffset = 0;
+    
+    bool includeRTs;
+    int tweetCount;
 };
 
 void GetHeadlinesApp::setup()
 {
-    // TODO - ALL variables' values (including file names) should come from JSON file
-    setFullScreen(true);
-    
     stripeHeight = getWindowHeight()/13;
-
+    
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
     
-    // load our flag image
-    mBackground = gl::Texture::create( loadImage( loadAsset("flag.jpg") ) );
-    // load just the stars
-    mStars = gl::Texture::create( loadImage( loadAsset("flag2.jpg")));
-    
-    // read in accounts and keywords
+    // read in variables
     Json::Value root;
     ifstream inputFile("accounts.json");
     
     if (inputFile.is_open()) {
         inputFile >> root;
+    
+        setFullScreen(root["fullscreen"].asBool());
+    
+        // load our flag image
+        mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
+        // load just the stars
+        mStars = gl::Texture::create( loadImage( loadAsset(root["startsImage"].asString())));
     
         for(auto a: root["accounts"]){
             // load twitter handles
@@ -85,6 +87,9 @@ void GetHeadlinesApp::setup()
         for(auto k: root["keywords"]){
             mKeywords.push_back(k.asString());
         }
+        
+        includeRTs = root["includeRTs"].asBool();
+        tweetCount = root["tweetCount"].asInt();
     
         inputFile.close();
     }
@@ -95,8 +100,10 @@ void GetHeadlinesApp::setup()
     
     // Set up some basic parameters
     mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword);} );
-    mParams->addParam("Filter", &mUseKeywords).key("k");
-    mParams->addParam("Show Params", &mShowParams).key("p");
+    // TODO - keys aren't working for filter and show param
+    mParams->addParam("Filter", &mUseKeywords).key("k").updateFn( [this] {getTweets();});
+    mParams->addParam("Show Params", &mShowParams).key("p").updateFn( [this] {getTweets();});
+    mParams->addButton("Update", [ & ]() { getTweets(); },	"key=u" );
     
     // Font used on news ticker for Fox
     mFont = Font( "Avenir", 36 );
@@ -120,13 +127,19 @@ void GetHeadlinesApp::setup()
     twit.getOAuth().setOAuthTokenKey(keys[2]);
     twit.getOAuth().setOAuthTokenSecret(keys[3]);
     
+    getTweets();
+}
+
+void GetHeadlinesApp::getTweets()
+{
+    mTweets.clear();
     string resp;
     
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-            if(twit.timelineUserGet(true, false, 40, a)) {
-//                cout << a << endl;
+            if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
+                //                cout << a << endl;
                 vector<string> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -174,11 +187,7 @@ void GetHeadlinesApp::setup()
         twit.getLastCurlError(resp);
         console() << resp << endl;
     }
-}
 
-// TODO - make this respond to an update button & don't use filter button & new keyword in params
-void GetHeadlinesApp::getTweets(string &resp)
-{
 }
 
 void GetHeadlinesApp::update()
@@ -194,7 +203,7 @@ void GetHeadlinesApp::draw()
     // TODO - send to Syphon
     // TODO - Syphon to isadora
     // TODO - figure out how to calculate width of tweet (Sterling?)
-    // TODO - bring in new logos from Andrew
+    // TODO - tweets should loop
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(string s1: s) {
@@ -222,6 +231,8 @@ void GetHeadlinesApp::draw()
 // TODO - clickable app that can work on any comp
 // TODO - try with a quicktime block
 // TODO - where should the file be saved? (same place as video assets, maybe a Google Drive folder
+// TODO - executable doesn't work
+// TODO - QA, ie there should always be at least two tweets from every network
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
