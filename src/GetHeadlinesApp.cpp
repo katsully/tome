@@ -18,6 +18,7 @@ using namespace std;
 class GetHeadlinesApp : public App {
   public:
 	void setup() override;
+    void keyDown(KeyEvent event) override;
 	void update() override;
 	void draw() override;
     
@@ -40,7 +41,7 @@ class GetHeadlinesApp : public App {
     gl::TextureFontRef	mTextureFont;
     
     params::InterfaceGlRef mParams;
-    bool mShowParams = true;
+    bool mShowParams;
     
     twitCurl twit;
     vector<vector<string>> mTweets;
@@ -59,8 +60,6 @@ class GetHeadlinesApp : public App {
 
 void GetHeadlinesApp::setup()
 {
-    stripeHeight = getWindowHeight()/13;
-    
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
     
@@ -72,11 +71,11 @@ void GetHeadlinesApp::setup()
         inputFile >> root;
     
         setFullScreen(root["fullscreen"].asBool());
-    
+        
         // load our flag image
         mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
         // load just the stars
-        mStars = gl::Texture::create( loadImage( loadAsset(root["startsImage"].asString())));
+        mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
     
         for(auto a: root["accounts"]){
             // load twitter handles
@@ -90,19 +89,21 @@ void GetHeadlinesApp::setup()
         
         includeRTs = root["includeRTs"].asBool();
         tweetCount = root["tweetCount"].asInt();
+        mShowParams = root["showParams"].asBool();
     
         inputFile.close();
     }
     else cout << "Unable to open json file";
+    
+    stripeHeight = getWindowHeight()/13;
 
     // Create the interface and give it a name
     mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
     
     // Set up some basic parameters
-    mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword);} );
-    // TODO - keys aren't working for filter and show param
-    mParams->addParam("Filter", &mUseKeywords).key("k").updateFn( [this] {getTweets();});
-    mParams->addParam("Show Params", &mShowParams).key("p").updateFn( [this] {getTweets();});
+    mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword); getTweets();} );
+    mParams->addParam("Filter", &mUseKeywords).updateFn( [this] {getTweets();});
+    mParams->addParam("Show Params", &mShowParams).key("p");
     mParams->addButton("Update", [ & ]() { getTweets(); },	"key=u" );
     
     // Font used on news ticker for Fox
@@ -138,6 +139,7 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
+            // TODO - NY1 has almost not tweets - pull more tweets from them and work on the keywords
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 //                cout << a << endl;
                 vector<string> temp;
@@ -152,13 +154,11 @@ void GetHeadlinesApp::getTweets()
                     for(auto s: root)
                     {
                         std::string t = s["text"].asString();
-                        // get rid of retweets
+                        // get rid of retweets (using false as a parameter doesn't get rid of quoted RTs)
                         if (t.substr(0,2) == "RT") {
                             continue;
                         }
                         // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
-                        
-                        // TODO - trump doesn't need a filter
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -188,6 +188,14 @@ void GetHeadlinesApp::getTweets()
         console() << resp << endl;
     }
 
+}
+
+void GetHeadlinesApp::keyDown(KeyEvent event)
+{
+    if (event.getChar() == 'k') {
+        mUseKeywords = !mUseKeywords;
+        getTweets();
+    }
 }
 
 void GetHeadlinesApp::update()
