@@ -2,7 +2,6 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 
-#include <iostream>
 #include "cinder/gl/TextureFont.h"
 #include "cinder/Rand.h"
 #include "cinder/Utilities.h"
@@ -10,6 +9,7 @@
 #include "twitcurl.h"
 #include "cinder/params/Params.h"
 #include <fstream>
+#include "cinder/qtime/AvfWriter.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -21,6 +21,7 @@ class GetHeadlinesApp : public App {
     void keyDown(KeyEvent event) override;
 	void update() override;
 	void draw() override;
+    std::string rtrim(std::string s);
     
     void getTweets();
     
@@ -56,6 +57,9 @@ class GetHeadlinesApp : public App {
     
     bool includeRTs;
     int tweetCount;
+    int nyTweetCount;
+    
+    qtime::MovieWriterRef mMovieExporter;
 };
 
 void GetHeadlinesApp::setup()
@@ -80,8 +84,6 @@ void GetHeadlinesApp::setup()
         for(auto a: root["accounts"]){
             // load twitter handles
             mAccounts.push_back(a["name"].asString());
-            // load logos
-            mLogos.push_back(gl::Texture::create( loadImage (loadAsset(a["logo"].asString() ))));
         }
         for(auto k: root["keywords"]){
             mKeywords.push_back(k.asString());
@@ -89,6 +91,7 @@ void GetHeadlinesApp::setup()
         
         includeRTs = root["includeRTs"].asBool();
         tweetCount = root["tweetCount"].asInt();
+        nyTweetCount = root["tweetCountNY1"].asInt();
         mShowParams = root["showParams"].asBool();
     
         inputFile.close();
@@ -127,8 +130,24 @@ void GetHeadlinesApp::setup()
     twit.getOAuth().setConsumerSecret(keys[1]);
     twit.getOAuth().setOAuthTokenKey(keys[2]);
     twit.getOAuth().setOAuthTokenSecret(keys[3]);
+
     
     getTweets();
+    
+    // quicktime setup
+#if defined( CINDER_COCOA_TOUCH )
+    auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::JPEG ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).
+    jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+    mMovieExporter = qtime::MovieWriter::create( getDocumentsDirectory() / "test.mov", getWindowWidth(), getWindowHeight(), format );
+#else
+    fs::path path = getSaveFilePath();
+    if( ! path.empty() ) {
+        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
+        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+        mMovieExporter = qtime::MovieWriter::create( path, getWindowWidth(), getWindowHeight(), format );
+    }
+#endif
+    gl::bindStockShader( gl::ShaderDef().color() );
 }
 
 void GetHeadlinesApp::getTweets()
@@ -139,7 +158,10 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-            // TODO - NY1 has almost not tweets - pull more tweets from them and work on the keywords
+            // if NY1 change the tweet count to include more tweets
+            if(a == "NY1") {
+                tweetCount = nyTweetCount;
+            }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 //                cout << a << endl;
                 vector<string> temp;
@@ -200,6 +222,13 @@ void GetHeadlinesApp::keyDown(KeyEvent event)
 
 void GetHeadlinesApp::update()
 {
+    const int maxFrames = 100;
+    if( mMovieExporter && getElapsedFrames() > 1 && getElapsedFrames() < maxFrames )
+        mMovieExporter->addFrame( copyWindowSurface() );
+    else if( mMovieExporter && getElapsedFrames() >= maxFrames ) {
+        mMovieExporter->finish();
+        mMovieExporter.reset();
+    }
 }
 
 void GetHeadlinesApp::draw()
@@ -215,11 +244,8 @@ void GetHeadlinesApp::draw()
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(string s1: s) {
-            gl::color(Color::white());
-            Rectf logoRect(widthPos-widthPosOffset, counter*stripeHeight+5, widthPos-widthPosOffset+50, counter*stripeHeight+stripeHeight);
-            gl::draw(mLogos[counter], logoRect);
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
-            mTextureFont->drawString(s1, vec2(widthPos-widthPosOffset+50, counter*stripeHeight+45));
+            mTextureFont->drawString(rtrim(s1)+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
             widthPos+=s1.length()*18;
         }
         counter++;
@@ -236,11 +262,19 @@ void GetHeadlinesApp::draw()
     if(mShowParams) { mParams->draw(); }
 }
 
+// trim from end
+std::string GetHeadlinesApp::rtrim(std::string s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+    return s;
+}
+
 // TODO - clickable app that can work on any comp
-// TODO - try with a quicktime block
 // TODO - where should the file be saved? (same place as video assets, maybe a Google Drive folder
 // TODO - executable doesn't work
 // TODO - QA, ie there should always be at least two tweets from every network
+// TODO - tweets need cleaning
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
