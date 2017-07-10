@@ -60,5 +60,6 @@
 	"tweetCountNY1": 170,
 	"backgroundImage": "flag.jpg",
 	"starsImage": "flag2.jpg",
+	"showFlag": false,
 	"showParams": false
 }

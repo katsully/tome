@@ -29,8 +29,9 @@ class GetHeadlinesApp : public App {
     gl::TextureRef mBackground;
     // star image
     gl::TextureRef mStars;
+    bool mShowFlag;
     // logos
-    vector<gl::TextureRef> mLogos;
+//    vector<gl::TextureRef> mLogos;
     
     //We'll parse our twitter content into these
     string tempKeyword;
@@ -94,6 +95,7 @@ void GetHeadlinesApp::setup()
         tweetCount = root["tweetCount"].asInt();
         nyTweetCount = root["tweetCountNY1"].asInt();
         mShowParams = root["showParams"].asBool();
+        mShowFlag = root["showFlag"].asBool();
     
         inputFile.close();
     }
@@ -225,7 +227,9 @@ void GetHeadlinesApp::keyDown(KeyEvent event)
 
 void GetHeadlinesApp::update()
 {
-    const int maxFrames = 100;
+    // TODO - should be a json variable, and prob not declared here
+    // TODO - figure out what this number should be
+    const int maxFrames = 10000;
     if( mMovieExporter && getElapsedFrames() > 1 && getElapsedFrames() < maxFrames )
         mMovieExporter->addFrame( copyWindowSurface() );
     else if( mMovieExporter && getElapsedFrames() >= maxFrames ) {
@@ -236,13 +240,17 @@ void GetHeadlinesApp::update()
 
 void GetHeadlinesApp::draw()
 {
-    gl::color(Color::white());
-    gl::draw( mBackground, getWindowBounds() );
+    if(mShowFlag) {
+        gl::color(Color::white());
+        gl::draw( mBackground, getWindowBounds() );
+    } else{
+        gl::clear(ColorA(0,0,0,0));
+    }
     int counter = 0;
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    // TODO - figure out how to calculate width of tweet (Sterling?)
+    // TODO - figure out how to calculate width of tweet (TextureFont->measureString)
     // TODO - tweets should loop
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
@@ -256,10 +264,12 @@ void GetHeadlinesApp::draw()
     
     widthPosOffset+=2;
     
-    // draw stars over tweets to create illusion that it's getting cut off
-    gl::color(Color::white());
-    Rectf drawRect( -1, -1, getWindowWidth()*.4, getWindowHeight()*.54 );
-    gl::draw(mStars, drawRect);
+    if(mShowFlag) {
+        // draw stars over tweets to create illusion that it's getting cut off
+        gl::color(Color::white());
+        Rectf drawRect( -1, -1, getWindowWidth()*.4, getWindowHeight()*.54 );
+        gl::draw(mStars, drawRect);
+    }
     
     // Draw the interface
     if(mShowParams) { mParams->draw(); }
