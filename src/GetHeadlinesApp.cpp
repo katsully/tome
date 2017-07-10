@@ -244,20 +244,21 @@ void GetHeadlinesApp::draw()
         gl::color(Color::white());
         gl::draw( mBackground, getWindowBounds() );
     } else{
-        gl::clear(ColorA(0,0,0,0));
+        gl::clear(Color(0,1,0));
     }
     int counter = 0;
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    // TODO - figure out how to calculate width of tweet (TextureFont->measureString)
     // TODO - tweets should loop
     for(vector<string> s : mTweets) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(string s1: s) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
             mTextureFont->drawString(rtrim(s1)+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
-            widthPos+=s1.length()*18;
+            float fontNameWidth = mTextureFont->measureString( rtrim(s1)+"..." ).x;
+//            cout << fontNameWidth << endl;
+            widthPos+=fontNameWidth;
         }
         counter++;
     }
