@@ -60,6 +60,7 @@ class GetHeadlinesApp : public App {
     int nyTweetCount;
     
     qtime::MovieWriterRef mMovieExporter;
+    qtime::MovieWriter::Format format;
 };
 
 void GetHeadlinesApp::setup()
@@ -136,14 +137,16 @@ void GetHeadlinesApp::setup()
     
     // quicktime setup
 #if defined( CINDER_COCOA_TOUCH )
-    auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::JPEG ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).
-    jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+//    auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::JPEG ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).
+//    jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+    format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE );
     mMovieExporter = qtime::MovieWriter::create( getDocumentsDirectory() / "test.mov", getWindowWidth(), getWindowHeight(), format );
 #else
     fs::path path = getSaveFilePath();
     if( ! path.empty() ) {
-        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
-        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+//        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
+//        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
+        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE );
         mMovieExporter = qtime::MovieWriter::create( path, getWindowWidth(), getWindowHeight(), format );
     }
 #endif
