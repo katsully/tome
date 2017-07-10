@@ -9,6 +9,7 @@
 #include "twitcurl.h"
 #include "cinder/params/Params.h"
 #include <fstream>
+#include <regex>
 #include "cinder/qtime/AvfWriter.h"
 
 using namespace ci;
@@ -46,7 +47,7 @@ class GetHeadlinesApp : public App {
     bool mShowParams;
     
     twitCurl twit;
-    vector<vector<string>> mTweets;
+    vector<map<string, int>> mTweets;
     bool mUseKeywords = true;
     
     // hold keys for Twitter API oauth
@@ -62,6 +63,8 @@ class GetHeadlinesApp : public App {
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
+    // TODO - what should this number be?
+    const int maxFrames = 10000;
 };
 
 void GetHeadlinesApp::setup()
@@ -157,6 +160,9 @@ void GetHeadlinesApp::getTweets()
     mTweets.clear();
     string resp;
     
+    // for pulling out hyperlinks
+    regex reg("http\\S+");
+    
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
@@ -165,8 +171,8 @@ void GetHeadlinesApp::getTweets()
                 tweetCount = nyTweetCount;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
-                //  cout << a << endl;
-                vector<string> temp;
+//                cout << a << endl;
+                map<string,int> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
                 Json::Reader json;
@@ -182,23 +188,25 @@ void GetHeadlinesApp::getTweets()
                         if (t.substr(0,2) == "RT") {
                             continue;
                         }
-                        // TODO - this isn't perfect test with .@SenSchumer: "Senate Republican healthcare bill is a wolf in sheep's clothing, only this wolf has even sharper teeth than the House bill."
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
                             for(string k: mKeywords){
                                 if (t.find(k) != std::string::npos) {
-                                    size_t end2 = t.find("http");
-                                    string editedTweet = t.substr(0, end2);
-                                    //   cout << editedTweet << endl;
-                                    temp.push_back(editedTweet);
+                                    string editedTweet = regex_replace(t, reg, "");
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
+                                    float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
+//                                    cout << editedTweet << endl;
+                                    temp.insert(make_pair(editedTweet, fontNameWidth));
                                     break;
                                 }
                             }
                         } else {
                             size_t end2 = t.find("http");
-                            string editedTweet = t.substr(0, end2);
-                            temp.push_back(editedTweet);
+                            string editedTweet = rtrim(t.substr(0, end2));
+                            editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
+                            float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
+                            temp.insert(make_pair(editedTweet, fontNameWidth));
                         }
                     }
                 }
@@ -216,6 +224,7 @@ void GetHeadlinesApp::getTweets()
 
 void GetHeadlinesApp::keyDown(KeyEvent event)
 {
+    // toggle on and off using keywords
     if (event.getChar() == 'k') {
         mUseKeywords = !mUseKeywords;
         getTweets();
@@ -224,9 +233,6 @@ void GetHeadlinesApp::keyDown(KeyEvent event)
 
 void GetHeadlinesApp::update()
 {
-    // TODO - should be a json variable, and prob not declared here
-    // TODO - figure out what this number should be
-    const int maxFrames = 10000;
     if( mMovieExporter && getElapsedFrames() > 1 && getElapsedFrames() < maxFrames )
         mMovieExporter->addFrame( copyWindowSurface() );
     else if( mMovieExporter && getElapsedFrames() >= maxFrames ) {
@@ -241,22 +247,25 @@ void GetHeadlinesApp::draw()
         gl::color(Color::white());
         gl::draw( mBackground, getWindowBounds() );
     } else{
+        // TODO- green background or 0,0,0,0?
         gl::clear(Color(0,1,0));
     }
     int counter = 0;
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    // TODO - tweets should loop
-    for(vector<string> s : mTweets) {
+    for(vector<map<string, int> >::iterator iter1 = mTweets.begin();
+        iter1 != mTweets.end();
+        iter1++) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
-        for(string s1: s) {
+        for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end(); ++iter2) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
-            mTextureFont->drawString(rtrim(s1)+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
-            // TODO should not calculate this in the draw loop
-            float fontNameWidth = mTextureFont->measureString( rtrim(s1)+"..." ).x;
-//            cout << fontNameWidth << endl;
-            widthPos+=fontNameWidth;
+            // TODO - tweets should loop
+//            if(widthPos-widthPosOffset+15 + iter2->second < 0 ) {
+//                widthPos =
+//            }
+            mTextureFont->drawString(iter2->first+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
+            widthPos+=iter2->second;
         }
         counter++;
     }
@@ -287,6 +296,7 @@ std::string GetHeadlinesApp::rtrim(std::string s) {
 // TODO - executable doesn't work
 // TODO - QA, ie there should always be at least two tweets from every network
 // TODO - tweets need cleaning
+// TODO - fps currently 26-29, can i make it better?
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
