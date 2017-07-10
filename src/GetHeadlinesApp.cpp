@@ -118,13 +118,13 @@ void GetHeadlinesApp::setup()
     
     string line;
     ifstream myfile ("keys.txt");
-    // TODO - prob don't need this while loop, should pull everything as a list
-    if (myfile.is_open())
+    if (myfile.good())
     {
         while ( getline (myfile,line) )
         {
             keys.push_back(line);
         }
+
         myfile.close();
     }
     else cout << "Unable to open key file";
@@ -133,14 +133,11 @@ void GetHeadlinesApp::setup()
     twit.getOAuth().setConsumerSecret(keys[1]);
     twit.getOAuth().setOAuthTokenKey(keys[2]);
     twit.getOAuth().setOAuthTokenSecret(keys[3]);
-
     
     getTweets();
     
     // quicktime setup
 #if defined( CINDER_COCOA_TOUCH )
-//    auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::JPEG ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).
-//    jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
     format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE );
     mMovieExporter = qtime::MovieWriter::create( getDocumentsDirectory() / "test.mov", getWindowWidth(), getWindowHeight(), format );
 #else
@@ -168,7 +165,7 @@ void GetHeadlinesApp::getTweets()
                 tweetCount = nyTweetCount;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
-                //                cout << a << endl;
+                //  cout << a << endl;
                 vector<string> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -256,6 +253,7 @@ void GetHeadlinesApp::draw()
         for(string s1: s) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
             mTextureFont->drawString(rtrim(s1)+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
+            // TODO should not calculate this in the draw loop
             float fontNameWidth = mTextureFont->measureString( rtrim(s1)+"..." ).x;
 //            cout << fontNameWidth << endl;
             widthPos+=fontNameWidth;
