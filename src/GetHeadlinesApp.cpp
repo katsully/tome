@@ -63,12 +63,12 @@ class GetHeadlinesApp : public App {
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
-    // TODO - what should this number be?
-    const int maxFrames = 10000;
+    const int maxFrames = 9000;     // 5 minutes
 };
 
 void GetHeadlinesApp::setup()
 {
+    
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
     
@@ -81,15 +81,18 @@ void GetHeadlinesApp::setup()
     
         setFullScreen(root["fullscreen"].asBool());
         
-        // load our flag image
-        mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
-        // load just the stars
-        mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
+        // load our flag images if we are showing the flag
+        if(mShowFlag) {
+            mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
+            // load just the stars
+            mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
+        }
     
+        // load twitter handles
         for(auto a: root["accounts"]){
-            // load twitter handles
             mAccounts.push_back(a["name"].asString());
         }
+        // load all keywords
         for(auto k: root["keywords"]){
             mKeywords.push_back(k.asString());
         }
@@ -141,14 +144,16 @@ void GetHeadlinesApp::setup()
     
     // quicktime setup
 #if defined( CINDER_COCOA_TOUCH )
-    format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE );
+    format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(300);
     mMovieExporter = qtime::MovieWriter::create( getDocumentsDirectory() / "test.mov", getWindowWidth(), getWindowHeight(), format );
 #else
     fs::path path = getSaveFilePath();
+    // TODO - if green use h.264 codec
     if( ! path.empty() ) {
 //        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
 //        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
-        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE );
+        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(300);
+
         mMovieExporter = qtime::MovieWriter::create( path, getWindowWidth(), getWindowHeight(), format );
     }
 #endif
@@ -171,7 +176,7 @@ void GetHeadlinesApp::getTweets()
                 tweetCount = nyTweetCount;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
-//                cout << a << endl;
+                cout << a << endl;
                 map<string,int> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -183,27 +188,33 @@ void GetHeadlinesApp::getTweets()
                 } else {
                     for(auto s: root)
                     {
-                        std::string t = s["text"].asString();
+                        std::string tweet = s["text"].asString();
                         // get rid of retweets (using false as a parameter doesn't get rid of quoted RTs)
-                        if (t.substr(0,2) == "RT") {
+                        if (tweet.substr(0,2) == "RT") {
                             continue;
                         }
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
                             for(string k: mKeywords){
-                                if (t.find(k) != std::string::npos) {
-                                    string editedTweet = regex_replace(t, reg, "");
+                                if (tweet.find(k) != std::string::npos) {
+                                    // remove hyperlinks
+                                    // TODO - remove duplicate tweets from same news source
+                                    string editedTweet = regex_replace(tweet, reg, "");
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '@'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
                                     float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
-//                                    cout << editedTweet << endl;
+//                                    if(a=="bpolitics") {
+                                        cout << editedTweet << endl;
+//                                    }
                                     temp.insert(make_pair(editedTweet, fontNameWidth));
                                     break;
                                 }
                             }
                         } else {
-                            size_t end2 = t.find("http");
-                            string editedTweet = rtrim(t.substr(0, end2));
+                            // remove hyperlinks
+                            string editedTweet = regex_replace(tweet, reg, "");
                             editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
                             float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
                             temp.insert(make_pair(editedTweet, fontNameWidth));
@@ -248,26 +259,38 @@ void GetHeadlinesApp::draw()
         gl::draw( mBackground, getWindowBounds() );
     } else{
         // TODO- green background or 0,0,0,0?
+        // TODO - does 0,0,0,0 work in syphon?
         gl::clear(Color(0,1,0));
     }
     int counter = 0;
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    for(vector<map<string, int> >::iterator iter1 = mTweets.begin();
-        iter1 != mTweets.end();
-        iter1++) {
+    for(vector<map<string, int> >::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
+//        if(iter1==mTweets.begin()){
+        // TODO - get confirmation of blue section percentage
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end(); ++iter2) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
             // TODO - tweets should loop
-//            if(widthPos-widthPosOffset+15 + iter2->second < 0 ) {
-//                widthPos =
+            // if the first element is off the screen, send it to the back
+//            if(iter2==iter1->begin() && (widthPos-widthPosOffset+15 + iter2->second) < 0 ) {
+                // get the last width position??
+//                cout << "~~~~~~~~~~~~~~~~~~~~~~HERE~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+                // send element to end of list
+//                auto x = *iter2;
+//                iter2 = iter1->erase(iter2);
+//                std::rotate(iter2, iter1->end());
+//                iter1->insert(iter1->end(), x);
+//                for(map<string,int>::iterator it = iter1->begin(); it != iter1->end(); ++it) {
+//                    cout << it->first << endl;
+//                }
 //            }
             mTextureFont->drawString(iter2->first+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
             widthPos+=iter2->second;
         }
         counter++;
+//        }
     }
     
     widthPosOffset+=2;
