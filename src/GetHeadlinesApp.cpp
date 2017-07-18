@@ -80,6 +80,10 @@ void GetHeadlinesApp::setup()
         inputFile >> root;
         
         mShowFlag = root["showFlag"].asBool();
+        includeRTs = root["includeRTs"].asBool();
+        tweetCount = root["tweetCount"].asInt();
+        nyTweetCount = root["tweetCountNY1"].asInt();
+        mShowParams = root["showParams"].asBool();
     
         setFullScreen(root["fullscreen"].asBool());
         
@@ -103,17 +107,13 @@ void GetHeadlinesApp::setup()
         for(auto k: root["keywords"]){
             mKeywords.push_back(k.asString());
         }
-        
-        includeRTs = root["includeRTs"].asBool();
-        tweetCount = root["tweetCount"].asInt();
-        nyTweetCount = root["tweetCountNY1"].asInt();
-        mShowParams = root["showParams"].asBool();
+
     
         inputFile.close();
     }
     else cout << "Unable to open json file";
     
-    stripeHeight = getWindowHeight()/13;
+    stripeHeight = (getWindowHeight()*.935)/13;
 
     // Create the interface and give it a name
     mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
@@ -263,6 +263,7 @@ void GetHeadlinesApp::update()
 void GetHeadlinesApp::draw()
 {
     if(mShowFlag) {
+        gl::clear(Color::black());
         gl::color(Color::white());
         gl::draw( mBackground, getWindowBounds() );
     } else{
@@ -295,7 +296,7 @@ void GetHeadlinesApp::draw()
 //                    cout << it->first << endl;
 //                }
 //            }
-            mTextureFont->drawString(iter2->first+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45));
+            mTextureFont->drawString(iter2->first+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45+50));
             widthPos+=iter2->second;
         }
         counter++;
@@ -307,7 +308,7 @@ void GetHeadlinesApp::draw()
     if(mShowFlag) {
         // draw stars over tweets to create illusion that it's getting cut off
         gl::color(Color::white());
-        Rectf drawRect( -1, -1, getWindowWidth()*.4, getWindowHeight()*.54 );
+        Rectf drawRect( 0, 0, getWindowWidth()*.4, getWindowHeight()*.565);
         gl::draw(mStars, drawRect);
     }
     

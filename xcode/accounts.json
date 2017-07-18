@@ -58,8 +58,8 @@
 	"includeRTs": false,
 	"tweetCount": 40,
 	"tweetCountNY1": 170,
-	"backgroundImage": "flag.jpg",
-	"starsImage": "flag2.jpg",
-	"showFlag": false,
+	"backgroundImage": "FlagTwitterBase.png",
+	"starsImage": "flag2.png",
+	"showFlag": true,
 	"showParams": false
 }
