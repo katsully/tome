@@ -176,7 +176,7 @@ void GetHeadlinesApp::getTweets()
                 tweetCount = nyTweetCount;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
-                cout << a << endl;
+//                cout << a << endl;
                 map<string,int> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -206,7 +206,7 @@ void GetHeadlinesApp::getTweets()
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
                                     float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
 //                                    if(a=="bpolitics") {
-                                        cout << editedTweet << endl;
+//                                        cout << editedTweet << endl;
 //                                    }
                                     temp.insert(make_pair(editedTweet, fontNameWidth));
                                     break;
