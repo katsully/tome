@@ -78,14 +78,21 @@ void GetHeadlinesApp::setup()
     
     if (inputFile.is_open()) {
         inputFile >> root;
+        
+        mShowFlag = root["showFlag"].asBool();
     
         setFullScreen(root["fullscreen"].asBool());
         
         // load our flag images if we are showing the flag
         if(mShowFlag) {
+            try {
             mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
             // load just the stars
             mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
+            }
+            catch( Exception &exc ) {
+                cout << "cannot load flag images" << endl;
+            }
         }
     
         // load twitter handles
@@ -101,7 +108,6 @@ void GetHeadlinesApp::setup()
         tweetCount = root["tweetCount"].asInt();
         nyTweetCount = root["tweetCountNY1"].asInt();
         mShowParams = root["showParams"].asBool();
-        mShowFlag = root["showFlag"].asBool();
     
         inputFile.close();
     }
@@ -158,6 +164,8 @@ void GetHeadlinesApp::setup()
     }
 #endif
     gl::bindStockShader( gl::ShaderDef().color() );
+    
+    gl::clear();
 }
 
 void GetHeadlinesApp::getTweets()
@@ -230,7 +238,7 @@ void GetHeadlinesApp::getTweets()
         twit.getLastCurlError(resp);
         console() << resp << endl;
     }
-
+//    cout << mBackground.
 }
 
 void GetHeadlinesApp::keyDown(KeyEvent event)
@@ -262,6 +270,7 @@ void GetHeadlinesApp::draw()
         // TODO - does 0,0,0,0 work in syphon?
         gl::clear(Color(0,1,0));
     }
+
     int counter = 0;
     
     // TODO - send to Syphon
