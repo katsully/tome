@@ -22,7 +22,8 @@ class GetHeadlinesApp : public App {
     void keyDown(KeyEvent event) override;
 	void update() override;
 	void draw() override;
-    std::string rtrim(std::string s);
+    void rtrim(std::string &s);
+    bool replace(std::string& str, const std::string& from, const std::string& to);
     
     void getTweets();
     
@@ -184,7 +185,7 @@ void GetHeadlinesApp::getTweets()
                 tweetCount = nyTweetCount;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
-//                cout << a << endl;
+                cout << a << endl;
                 map<string,int> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
@@ -209,18 +210,64 @@ void GetHeadlinesApp::getTweets()
                                     // remove hyperlinks
                                     // TODO - remove duplicate tweets from same news source
                                     string editedTweet = regex_replace(tweet, reg, "");
+                                    // remove weird period at beginning of some tweets
+                                    if(editedTweet.at(0) == '.') {
+                                        editedTweet = editedTweet.substr( 1, editedTweet.length() );
+                                    }
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '@'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
-                                    float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
-//                                    if(a=="bpolitics") {
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
+//                                    editedTweet.erase(std::remove_if(editedTweet.begin(), editedTweet.end(), [](char c){ return c=='\n' || c == '@' || c == '!'; } editedTweet.end());
+                                    editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
+                                    // go through and change all handles to actual names w/ twitter api
+                                    replace(editedTweet, "&amp;", "&");
+                                    string searchTweet = editedTweet;
+                                    while (searchTweet.find('@') != std::string::npos) {
+//                                        cout << searchTweet << endl;
+                                        searchTweet = searchTweet.substr(searchTweet.find("@"));
+                                        int endIdx = 0;
+                                        if(searchTweet.find(" ") != std::string::npos) {
+                                            endIdx = searchTweet.find(" ")-1;
+                                        } else {
+                                            endIdx = searchTweet.length();
+                                        }
+                                        // If there is a ':' after the handle
+                                        // TODO - this should handle all non alpha numeric characters (excluding '_')
+                                        if(searchTweet.substr(1,endIdx).find(":") != std::string::npos) {
+                                            endIdx = searchTweet.find(":")-1;
+                                        }
+                                        if(searchTweet.substr(1,endIdx).find(".") != std::string::npos) {
+                                            endIdx = searchTweet.find(".")-1;
+                                        }
+                                        if(searchTweet.substr(1,endIdx).find("'") != std::string::npos) {
+                                            endIdx = searchTweet.find("'")-1;
+                                        }
+//                                        cout << searchTweet.substr(1, endIdx) << endl;
+                                        if (twit.userGet(searchTweet.substr(1, endIdx)) ) {
+                                            twit.getLastWebResponse(resp);
+//                                            cout << resp << endl;
+                                            Json::Value root;
+                                            Json::Reader json;
+                                            bool parsed = json.parse(resp, root, false);
+//                                            cout << "~~~EDITEDTWEET" << endl;
+//                                            cout << editedTweet << endl;
+                                            replace(editedTweet, searchTweet.substr(0, endIdx+1), root["name"].asString());
+//                                            cout << "~~~AFTER" << endl;
+//                                            cout << editedTweet << endl;
+                                        }
+                                        searchTweet = searchTweet.substr(endIdx);
+                                        
+                                    }
+                                    rtrim(editedTweet);
+                                    cout << editedTweet.at(editedTweet.length()-1) << endl;
+                                    float fontNameWidth = mTextureFont->measureString( editedTweet+"...  " ).x;
 //                                        cout << editedTweet << endl;
-//                                    }
                                     temp.insert(make_pair(editedTweet, fontNameWidth));
                                     break;
                                 }
                             }
                         } else {
+                            // TODO - abstract most of the stuff in the if so it applies to both if and else
                             // remove hyperlinks
                             string editedTweet = regex_replace(tweet, reg, "");
                             editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
@@ -296,7 +343,7 @@ void GetHeadlinesApp::draw()
 //                    cout << it->first << endl;
 //                }
 //            }
-            mTextureFont->drawString(iter2->first+"...", vec2(widthPos-widthPosOffset+15, counter*stripeHeight+45+50));
+            mTextureFont->drawString(iter2->first+"...  ", vec2(widthPos-widthPosOffset+20, counter*stripeHeight+55+(getWindowHeight()*.065)));
             widthPos+=iter2->second;
         }
         counter++;
@@ -317,11 +364,16 @@ void GetHeadlinesApp::draw()
 }
 
 // trim from end
-std::string GetHeadlinesApp::rtrim(std::string s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-    return s;
+void GetHeadlinesApp::rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+}
+
+bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
 }
 
 // TODO - clickable app that can work on any comp
