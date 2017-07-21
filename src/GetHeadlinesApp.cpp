@@ -61,6 +61,7 @@ class GetHeadlinesApp : public App {
     bool includeRTs;
     int tweetCount;
     int nyTweetCount;
+    bool mRandom;
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
@@ -86,7 +87,9 @@ void GetHeadlinesApp::setup()
         nyTweetCount = root["tweetCountNY1"].asInt();
         mShowParams = root["showParams"].asBool();
     
-        setFullScreen(root["fullscreen"].asBool());
+        setFullScreen(false);
+        
+        //setFullScreen(root["fullscreen"].asBool());
         
         // load our flag images if we are showing the flag
         if(mShowFlag) {
@@ -151,7 +154,7 @@ void GetHeadlinesApp::setup()
     
     // quicktime setup
 #if defined( CINDER_COCOA_TOUCH )
-    format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(300);
+    format = qtime::MovieWrite::Format().codec( qtime::MovieWriter::PRO_RES_422).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(300);
     mMovieExporter = qtime::MovieWriter::create( getDocumentsDirectory() / "test.mov", getWindowWidth(), getWindowHeight(), format );
 #else
     fs::path path = getSaveFilePath();
@@ -172,6 +175,7 @@ void GetHeadlinesApp::setup()
 void GetHeadlinesApp::getTweets()
 {
     mTweets.clear();
+    mRandom = false;
     string resp;
     
     // for pulling out hyperlinks
@@ -183,6 +187,9 @@ void GetHeadlinesApp::getTweets()
             // if NY1 change the tweet count to include more tweets
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
+            }
+            if( a == "jim_newell") {
+                mRandom = true;
             }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 cout << a << endl;
@@ -217,7 +224,12 @@ void GetHeadlinesApp::getTweets()
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
-//                                    editedTweet.erase(std::remove_if(editedTweet.begin(), editedTweet.end(), [](char c){ return c=='\n' || c == '@' || c == '!'; } editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\342'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\224'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\231'), editedTweet.end());
+
+                                    //                                    editedTweet.erase(std::remove_if(editedTweet.begin(), editedTweet.end(), [](char c){ return c=='\n' || c == '@' || c == '!'; } editedTweet.end());
                                     editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
                                     // go through and change all handles to actual names w/ twitter api
                                     replace(editedTweet, "&amp;", "&");
@@ -249,20 +261,21 @@ void GetHeadlinesApp::getTweets()
                                             Json::Value root;
                                             Json::Reader json;
                                             bool parsed = json.parse(resp, root, false);
-//                                            cout << "~~~EDITEDTWEET" << endl;
-//                                            cout << editedTweet << endl;
                                             replace(editedTweet, searchTweet.substr(0, endIdx+1), root["name"].asString());
-//                                            cout << "~~~AFTER" << endl;
-//                                            cout << editedTweet << endl;
                                         }
                                         searchTweet = searchTweet.substr(endIdx);
                                         
                                     }
                                     rtrim(editedTweet);
-                                    cout << editedTweet.at(editedTweet.length()-1) << endl;
-                                    float fontNameWidth = mTextureFont->measureString( editedTweet+"...  " ).x;
+//                                    cout << editedTweet.at(editedTweet.length()-1) << endl;
+                                    editedTweet += "...  ";
+                                    float fontNameWidth = mTextureFont->measureString( editedTweet ).x;
 //                                        cout << editedTweet << endl;
-                                    temp.insert(make_pair(editedTweet, fontNameWidth));
+                                    if(mRandom) {
+                                        mTweets[Rand::randInt(0, mTweets.size())].insert(make_pair(editedTweet, fontNameWidth));
+                                    } else {
+                                        temp.insert(make_pair(editedTweet, fontNameWidth));
+                                    }
                                     break;
                                 }
                             }
@@ -276,7 +289,9 @@ void GetHeadlinesApp::getTweets()
                         }
                     }
                 }
-                mTweets.push_back(temp);
+                if(!mRandom) {
+                    mTweets.push_back(temp);
+                }
             }
         }
     }
@@ -325,25 +340,27 @@ void GetHeadlinesApp::draw()
     // TODO - Syphon to isadora
     for(vector<map<string, int> >::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
 //        if(iter1==mTweets.begin()){
-        // TODO - get confirmation of blue section percentage
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
         for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end(); ++iter2) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
             // TODO - tweets should loop
-            // if the first element is off the screen, send it to the back
-//            if(iter2==iter1->begin() && (widthPos-widthPosOffset+15 + iter2->second) < 0 ) {
-                // get the last width position??
-//                cout << "~~~~~~~~~~~~~~~~~~~~~~HERE~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-                // send element to end of list
-//                auto x = *iter2;
-//                iter2 = iter1->erase(iter2);
-//                std::rotate(iter2, iter1->end());
-//                iter1->insert(iter1->end(), x);
-//                for(map<string,int>::iterator it = iter1->begin(); it != iter1->end(); ++it) {
-//                    cout << it->first << endl;
-//                }
+            // if tweet goes offscreen, send it to the back of the list
+//            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second ) {
+//                cout << iter2->first << endl;
+//                cout << (widthPos-widthPosOffset+20) * -1 << endl;
+//                cout << iter2->second << endl;
+//                cout << "hERE" << endl;
+//                auto x = iter2;
+//                iter1->erase(iter2);
+//                cout << "also here" << endl;
+//                iter1->insert(x, iter1->end());
+//                cout << "made it" << endl;
+//                std::rotate(iter1->begin(),
+//                            next(iter1->begin(), 1), // this will be the new first element
+//                            std::next(iter1->begin()),
+//                            iter1->end());
 //            }
-            mTextureFont->drawString(iter2->first+"...  ", vec2(widthPos-widthPosOffset+20, counter*stripeHeight+55+(getWindowHeight()*.065)));
+            mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
             widthPos+=iter2->second;
         }
         counter++;
@@ -355,7 +372,7 @@ void GetHeadlinesApp::draw()
     if(mShowFlag) {
         // draw stars over tweets to create illusion that it's getting cut off
         gl::color(Color::white());
-        Rectf drawRect( 0, 0, getWindowWidth()*.4, getWindowHeight()*.565);
+        Rectf drawRect( 0, 0, getWindowWidth()*.4, getWindowHeight()*.572);
         gl::draw(mStars, drawRect);
     }
     
@@ -382,9 +399,11 @@ bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const s
 // TODO - QA, ie there should always be at least two tweets from every network
 // TODO - tweets need cleaning
 // TODO - fps currently 26-29, can i make it better?
+// TODO - write tweets into file, this becomes plan B in case api breaks
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
+    settings->setWindowSize(1920, 1080);
     // have the app run full screen in second monitor (if available)
     vector<DisplayRef> displays = Display::getDisplays();
     
