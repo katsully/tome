@@ -48,7 +48,7 @@ class GetHeadlinesApp : public App {
     bool mShowParams;
     
     twitCurl twit;
-    vector<map<string, int>> mTweets;
+    vector<list<pair<string, int>>> mTweets;
     bool mUseKeywords = true;
     
     // hold keys for Twitter API oauth
@@ -69,6 +69,8 @@ class GetHeadlinesApp : public App {
     
     // for offsets once you start moving tweets
     int eraseOffsets[13];
+    string erasedTweets[13] = {"", "", "", "", "", "", "", "", "", "", "", "", ""};
+    int erasedValues[13];
 };
 
 void GetHeadlinesApp::setup()
@@ -199,7 +201,7 @@ void GetHeadlinesApp::getTweets()
 //            }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 cout << a << endl;
-                map<string,int> temp;
+                list<pair<string,int>> temp;
                 twit.getLastWebResponse(resp);
                 Json::Value root;
                 Json::Reader json;
@@ -280,9 +282,10 @@ void GetHeadlinesApp::getTweets()
                                     float fontNameWidth = mTextureFont->measureString( editedTweet ).x;
 //                                        cout << editedTweet << endl;
                                     if(mRandom) {
-                                        mTweets[Rand::randInt(0, mTweets.size())].insert(make_pair(editedTweet, fontNameWidth));
+                                        mTweets[Rand::randInt(0, mTweets.size())].push_back({editedTweet, fontNameWidth});
                                     } else {
-                                        temp.insert(make_pair(editedTweet, fontNameWidth));
+//                                        temp.insert(make_pair(editedTweet, fontNameWidth));
+                                        temp.push_back({editedTweet, fontNameWidth});
                                     }
                                     break;
                                 }
@@ -293,7 +296,7 @@ void GetHeadlinesApp::getTweets()
                             string editedTweet = regex_replace(tweet, reg, "");
                             editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
                             float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
-                            temp.insert(make_pair(editedTweet, fontNameWidth));
+                            temp.push_back(make_pair(editedTweet, fontNameWidth));
                         }
                     }
                 }
@@ -328,6 +331,12 @@ void GetHeadlinesApp::update()
         mMovieExporter->finish();
         mMovieExporter.reset();
     }
+//    for(int i=0; i < 13; i++ ) {
+//        if(!erasedTweets[i].empty()) {
+//            erasedTweets[i] = "";
+//        }
+//    }
+    
 }
 
 void GetHeadlinesApp::draw()
@@ -347,19 +356,18 @@ void GetHeadlinesApp::draw()
     // TODO - send to Syphon
     // TODO - Syphon to isadora
     bool itHappened = false;
-    for(vector<map<string, int> >::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
-        if(iter1==mTweets.begin()){
+    for(vector<list<pair<string, int>>>::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
+//        if(iter1==mTweets.begin()){
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
             widthPos += eraseOffsets[counter];
-        for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end();) {
+        for(list<pair<string,int>>::iterator iter2 = iter1->begin(); iter2 != iter1->end();) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
-            // TODO - tweets should loop
             bool erased = false;
             // if tweet goes offscreen, send it to the back of the list
-            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second ) {
-                cout << iter2->first << endl;
-                cout << iter2->second << endl;
-                cout << (widthPos-widthPosOffset+20) << endl;
+            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second) {
+//                cout << iter2->first << endl;
+//                cout << iter2->second << endl;
+//                cout << (widthPos-widthPosOffset+20) << endl;
 //                cout << iter2->second << endl;
 //                cout << "hERE" << endl;
 //                auto x = iter2;
@@ -373,28 +381,33 @@ void GetHeadlinesApp::draw()
 //                            iter1->end());
                 eraseOffsets[counter] += iter2->second;
                 widthPos += iter2->second;
+                auto x = *iter2;
+                erasedTweets[counter] = x.first;
+                erasedValues[counter] = x.second;
                 iter2 = iter1->erase(iter2);
                 erased = true;
                 itHappened = true;
-            
+                iter1->insert(iter1->end(), x);
+//                for(list<pair<string,int>>::iterator iter3 = iter1->begin(); iter3 != iter1->end(); iter3++) {
+//                    cout << iter3->first << endl;
+//                }
             }
             if(!erased) {
-                if(iter2==iter1->begin()) {
-                    cout << "width pos: " << widthPos << endl;
-                    cout << "X pos: " << widthPos-widthPosOffset+20 << endl;
-                }
+//                if(iter2==iter1->begin()) {
+//                    cout << "X pos: " << widthPos-widthPosOffset+20 << endl;
+//                }
                 mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
-                if(itHappened && iter2==iter1->begin()) {
-                    cout << "First tweet " << iter2->first << endl;
-                    cout << "First width " << iter2->second << endl;
-                    cout << "width pos " << widthPos << endl;
-                }
+//                if(itHappened && iter2==iter1->begin()) {
+//                    cout << "First tweet " << iter2->first << endl;
+//                    cout << "First width " << iter2->second << endl;
+//                    cout << "width pos " << widthPos << endl;
+//                }
                 widthPos+=iter2->second;
                 ++iter2;
             }
         }
         counter++;
-        }
+//        }
     }
     
     widthPosOffset+=2;
