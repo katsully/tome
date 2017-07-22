@@ -66,10 +66,16 @@ class GetHeadlinesApp : public App {
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
     const int maxFrames = 9000;     // 5 minutes
+    
+    // for offsets once you start moving tweets
+    int eraseOffsets[13];
 };
 
 void GetHeadlinesApp::setup()
 {
+    for(int i=0; i<sizeof(eraseOffsets); i++) {
+        eraseOffsets[i] = 0;
+    }
     
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
@@ -188,9 +194,9 @@ void GetHeadlinesApp::getTweets()
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
             }
-            if( a == "jim_newell") {
-                mRandom = true;
-            }
+//            if( a == "jim_newell") {
+//                mRandom = true;
+//            }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 cout << a << endl;
                 map<string,int> temp;
@@ -228,6 +234,8 @@ void GetHeadlinesApp::getTweets()
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\224'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\231'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\234'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\235'), editedTweet.end());
 
                                     //                                    editedTweet.erase(std::remove_if(editedTweet.begin(), editedTweet.end(), [](char c){ return c=='\n' || c == '@' || c == '!'; } editedTweet.end());
                                     editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
@@ -338,16 +346,20 @@ void GetHeadlinesApp::draw()
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
+    bool itHappened = false;
     for(vector<map<string, int> >::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
-//        if(iter1==mTweets.begin()){
+        if(iter1==mTweets.begin()){
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
-        for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end(); ++iter2) {
+            widthPos += eraseOffsets[counter];
+        for(map<string,int>::iterator iter2 = iter1->begin(); iter2 != iter1->end();) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
             // TODO - tweets should loop
+            bool erased = false;
             // if tweet goes offscreen, send it to the back of the list
-//            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second ) {
-//                cout << iter2->first << endl;
-//                cout << (widthPos-widthPosOffset+20) * -1 << endl;
+            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second ) {
+                cout << iter2->first << endl;
+                cout << iter2->second << endl;
+                cout << (widthPos-widthPosOffset+20) << endl;
 //                cout << iter2->second << endl;
 //                cout << "hERE" << endl;
 //                auto x = iter2;
@@ -359,12 +371,30 @@ void GetHeadlinesApp::draw()
 //                            next(iter1->begin(), 1), // this will be the new first element
 //                            std::next(iter1->begin()),
 //                            iter1->end());
-//            }
-            mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
-            widthPos+=iter2->second;
+                eraseOffsets[counter] += iter2->second;
+                widthPos += iter2->second;
+                iter2 = iter1->erase(iter2);
+                erased = true;
+                itHappened = true;
+            
+            }
+            if(!erased) {
+                if(iter2==iter1->begin()) {
+                    cout << "width pos: " << widthPos << endl;
+                    cout << "X pos: " << widthPos-widthPosOffset+20 << endl;
+                }
+                mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
+                if(itHappened && iter2==iter1->begin()) {
+                    cout << "First tweet " << iter2->first << endl;
+                    cout << "First width " << iter2->second << endl;
+                    cout << "width pos " << widthPos << endl;
+                }
+                widthPos+=iter2->second;
+                ++iter2;
+            }
         }
         counter++;
-//        }
+        }
     }
     
     widthPosOffset+=2;
@@ -393,6 +423,7 @@ bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const s
     return true;
 }
 
+// TODO - put joke tweets back in randomly once looping is figured out and put NY1 back in
 // TODO - clickable app that can work on any comp
 // TODO - where should the file be saved? (same place as video assets, maybe a Google Drive folder
 // TODO - executable doesn't work
