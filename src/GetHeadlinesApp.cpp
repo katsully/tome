@@ -35,9 +35,10 @@ class GetHeadlinesApp : public App {
     // logos
 //    vector<gl::TextureRef> mLogos;
     
-    //We'll parse our twitter content into these
     string tempKeyword;
+    // this will contain which keywords we are searching for
     vector<string> mKeywords;
+    // this will contain which accounts we query
     vector<string> mAccounts;
     
     //For drawing our text
@@ -68,9 +69,8 @@ class GetHeadlinesApp : public App {
     const int maxFrames = 9000;     // 5 minutes
     
     // for offsets once you start moving tweets
+    // TODO - initalize to all zeros
     int eraseOffsets[13];
-    string erasedTweets[13] = {"", "", "", "", "", "", "", "", "", "", "", "", ""};
-    int erasedValues[13];
 };
 
 void GetHeadlinesApp::setup()
@@ -82,7 +82,7 @@ void GetHeadlinesApp::setup()
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
     
-    // read in variables
+    // read in variables from json file
     Json::Value root;
     ifstream inputFile("accounts.json");
     
@@ -284,7 +284,6 @@ void GetHeadlinesApp::getTweets()
                                     if(mRandom) {
                                         mTweets[Rand::randInt(0, mTweets.size())].push_back({editedTweet, fontNameWidth});
                                     } else {
-//                                        temp.insert(make_pair(editedTweet, fontNameWidth));
                                         temp.push_back({editedTweet, fontNameWidth});
                                     }
                                     break;
@@ -311,7 +310,6 @@ void GetHeadlinesApp::getTweets()
         twit.getLastCurlError(resp);
         console() << resp << endl;
     }
-//    cout << mBackground.
 }
 
 void GetHeadlinesApp::keyDown(KeyEvent event)
@@ -325,18 +323,13 @@ void GetHeadlinesApp::keyDown(KeyEvent event)
 
 void GetHeadlinesApp::update()
 {
+    // for recording to a mp4 file
     if( mMovieExporter && getElapsedFrames() > 1 && getElapsedFrames() < maxFrames )
         mMovieExporter->addFrame( copyWindowSurface() );
     else if( mMovieExporter && getElapsedFrames() >= maxFrames ) {
         mMovieExporter->finish();
         mMovieExporter.reset();
     }
-//    for(int i=0; i < 13; i++ ) {
-//        if(!erasedTweets[i].empty()) {
-//            erasedTweets[i] = "";
-//        }
-//    }
-    
 }
 
 void GetHeadlinesApp::draw()
@@ -346,7 +339,6 @@ void GetHeadlinesApp::draw()
         gl::color(Color::white());
         gl::draw( mBackground, getWindowBounds() );
     } else{
-        // TODO- green background or 0,0,0,0?
         // TODO - does 0,0,0,0 work in syphon?
         gl::clear(Color(0,1,0));
     }
@@ -357,7 +349,6 @@ void GetHeadlinesApp::draw()
     // TODO - Syphon to isadora
     bool itHappened = false;
     for(vector<list<pair<string, int>>>::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
-//        if(iter1==mTweets.begin()){
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
             widthPos += eraseOffsets[counter];
         for(list<pair<string,int>>::iterator iter2 = iter1->begin(); iter2 != iter1->end();) {
@@ -365,49 +356,21 @@ void GetHeadlinesApp::draw()
             bool erased = false;
             // if tweet goes offscreen, send it to the back of the list
             if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second) {
-//                cout << iter2->first << endl;
-//                cout << iter2->second << endl;
-//                cout << (widthPos-widthPosOffset+20) << endl;
-//                cout << iter2->second << endl;
-//                cout << "hERE" << endl;
-//                auto x = iter2;
-//                iter1->erase(iter2);
-//                cout << "also here" << endl;
-//                iter1->insert(x, iter1->end());
-//                cout << "made it" << endl;
-//                std::rotate(iter1->begin(),
-//                            next(iter1->begin(), 1), // this will be the new first element
-//                            std::next(iter1->begin()),
-//                            iter1->end());
                 eraseOffsets[counter] += iter2->second;
                 widthPos += iter2->second;
                 auto x = *iter2;
-                erasedTweets[counter] = x.first;
-                erasedValues[counter] = x.second;
                 iter2 = iter1->erase(iter2);
                 erased = true;
                 itHappened = true;
                 iter1->insert(iter1->end(), x);
-//                for(list<pair<string,int>>::iterator iter3 = iter1->begin(); iter3 != iter1->end(); iter3++) {
-//                    cout << iter3->first << endl;
-//                }
             }
             if(!erased) {
-//                if(iter2==iter1->begin()) {
-//                    cout << "X pos: " << widthPos-widthPosOffset+20 << endl;
-//                }
                 mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
-//                if(itHappened && iter2==iter1->begin()) {
-//                    cout << "First tweet " << iter2->first << endl;
-//                    cout << "First width " << iter2->second << endl;
-//                    cout << "width pos " << widthPos << endl;
-//                }
                 widthPos+=iter2->second;
                 ++iter2;
             }
         }
         counter++;
-//        }
     }
     
     widthPosOffset+=2;
