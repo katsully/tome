@@ -24,6 +24,7 @@ class GetHeadlinesApp : public App {
 	void draw() override;
     void rtrim(std::string &s);
     void replaceAll(std::string& str, const std::string& from, const std::string& to);
+    bool replace(std::string& str, const std::string& from, const std::string& to);
     
     void getTweets();
     
@@ -190,14 +191,11 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-            if(a == "ABC"){
+//            if(a == "RT_America"){
             // if NY1 change the tweet count to include more tweets
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
             }
-//            if( a == "jim_newell") {
-//                mRandom = true;
-//            }
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 cout << a << endl;
                 list<pair<string,int>> temp;
@@ -216,7 +214,6 @@ void GetHeadlinesApp::getTweets()
                         if (tweet.substr(0,2) == "RT") {
                             continue;
                         }
-//                        cout << tweet << endl;
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -229,26 +226,10 @@ void GetHeadlinesApp::getTweets()
                                     if(editedTweet.at(0) == '.') {
                                         editedTweet = editedTweet.substr( 1, editedTweet.length() );
                                     }
-                                    // TODO - can this be condensed?
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
-                                    // shortened urls
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
-                                    // shortened urls
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\342'), editedTweet.end());
-                                    // shortened urls
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
-                                    
-                                    replaceAll(editedTweet, "\230", "'");
-                                    replaceAll(editedTweet, "\231", "'");
-                                    replaceAll(editedTweet, "\223", "-");
-                                    replaceAll(editedTweet, "\224", "-");
-                                    replaceAll(editedTweet, "\234", "\"");
-                                    replaceAll(editedTweet, "\235", "\"");
-                                    replaceAll(editedTweet, "\202\254", "€");
 
                                     editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
                                     replaceAll(editedTweet, "&amp;", "&");
+                                
                                     // go through and change all handles to actual names w/ twitter api
                                     string searchTweet = editedTweet;
                                     while (searchTweet.find('@') != std::string::npos) {
@@ -259,7 +240,7 @@ void GetHeadlinesApp::getTweets()
                                         } else {
                                             endIdx = searchTweet.length();
                                         }
-                                        // If there is a ':' after the handle
+                                        // If there is a ':' or other character after the handle
                                         // TODO - this should handle all non alpha numeric characters (excluding '_')
                                         if(searchTweet.substr(1,endIdx).find(":") != std::string::npos) {
                                             endIdx = searchTweet.find(":")-1;
@@ -283,6 +264,31 @@ void GetHeadlinesApp::getTweets()
                                         searchTweet = searchTweet.substr(endIdx);
                                         
                                     }
+                                    
+                                    // TODO - can this be condensed?
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
+                                    // shortened urls
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
+                                    // shortened urls
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\342'), editedTweet.end());
+                                    // shortened urls
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
+                                    // remove $ because Cinder doesn't render that symbol (I filed an issue - https://github.com/cinder/Cinder/issues/1880)
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '$'), editedTweet.end());
+                                    
+                                    // clean up escape sequence (ie curly quotes, etc)
+                                    replaceAll(editedTweet, "\230", "'");
+                                    replaceAll(editedTweet, "\231", "'");
+                                    replaceAll(editedTweet, "\223", "-");
+                                    replaceAll(editedTweet, "\224", "-");
+                                    replaceAll(editedTweet, "\234", "\"");
+                                    replaceAll(editedTweet, "\235", "\"");
+                                    // erase € because Cinder doesn't render it (I filed an issue - https://github.com/cinder/Cinder/issues/1880) )
+                                    replaceAll(editedTweet, "\202\254", "");
+                                    // remove registered mark
+                                    replaceAll(editedTweet, "\302\256", "");
+                                    
                                     rtrim(editedTweet);
 
                                     if(editedTweet.back() == ':' || editedTweet.back() == '.'){
@@ -316,7 +322,7 @@ void GetHeadlinesApp::getTweets()
                     mTweets.push_back(temp);
                 }
             }
-            }
+//            }
         }
     }
     else
@@ -413,6 +419,14 @@ void GetHeadlinesApp::replaceAll(std::string& str, const std::string& from, cons
         
         start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
     }
+}
+
+bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
 }
 
 // TODO - put joke tweets back in randomly once looping is figured out and put NY1 back in
