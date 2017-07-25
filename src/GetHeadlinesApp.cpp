@@ -23,7 +23,7 @@ class GetHeadlinesApp : public App {
 	void update() override;
 	void draw() override;
     void rtrim(std::string &s);
-    bool replace(std::string& str, const std::string& from, const std::string& to);
+    void replaceAll(std::string& str, const std::string& from, const std::string& to);
     
     void getTweets();
     
@@ -66,7 +66,7 @@ class GetHeadlinesApp : public App {
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
-    const int maxFrames = 9000;     // 5 minutes
+    const int maxFrames = 18000;     // 10 minutes
     
     // for offsets once you start moving tweets
     // TODO - initalize to all zeros
@@ -75,9 +75,7 @@ class GetHeadlinesApp : public App {
 
 void GetHeadlinesApp::setup()
 {
-    for(int i=0; i<sizeof(eraseOffsets); i++) {
-        eraseOffsets[i] = 0;
-    }
+    std::fill_n(eraseOffsets, 13, 0);
     
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
@@ -192,6 +190,7 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
+            if(a == "ABC"){
             // if NY1 change the tweet count to include more tweets
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
@@ -217,6 +216,7 @@ void GetHeadlinesApp::getTweets()
                         if (tweet.substr(0,2) == "RT") {
                             continue;
                         }
+//                        cout << tweet << endl;
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -229,23 +229,29 @@ void GetHeadlinesApp::getTweets()
                                     if(editedTweet.at(0) == '.') {
                                         editedTweet = editedTweet.substr( 1, editedTweet.length() );
                                     }
+                                    // TODO - can this be condensed?
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
+                                    // shortened urls
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
+                                    // shortened urls
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\342'), editedTweet.end());
+                                    // shortened urls
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\224'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\231'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\234'), editedTweet.end());
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\235'), editedTweet.end());
+                                    
+                                    replaceAll(editedTweet, "\230", "'");
+                                    replaceAll(editedTweet, "\231", "'");
+                                    replaceAll(editedTweet, "\223", "-");
+                                    replaceAll(editedTweet, "\224", "-");
+                                    replaceAll(editedTweet, "\234", "\"");
+                                    replaceAll(editedTweet, "\235", "\"");
+                                    replaceAll(editedTweet, "\202\254", "€");
 
-                                    //                                    editedTweet.erase(std::remove_if(editedTweet.begin(), editedTweet.end(), [](char c){ return c=='\n' || c == '@' || c == '!'; } editedTweet.end());
                                     editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
+                                    replaceAll(editedTweet, "&amp;", "&");
                                     // go through and change all handles to actual names w/ twitter api
-                                    replace(editedTweet, "&amp;", "&");
                                     string searchTweet = editedTweet;
                                     while (searchTweet.find('@') != std::string::npos) {
-//                                        cout << searchTweet << endl;
                                         searchTweet = searchTweet.substr(searchTweet.find("@"));
                                         int endIdx = 0;
                                         if(searchTweet.find(" ") != std::string::npos) {
@@ -264,23 +270,30 @@ void GetHeadlinesApp::getTweets()
                                         if(searchTweet.substr(1,endIdx).find("'") != std::string::npos) {
                                             endIdx = searchTweet.find("'")-1;
                                         }
-//                                        cout << searchTweet.substr(1, endIdx) << endl;
+                                        if(searchTweet.substr(1,endIdx).find(")") != std::string::npos) {
+                                            endIdx = searchTweet.find(")")-1;
+                                        }
                                         if (twit.userGet(searchTweet.substr(1, endIdx)) ) {
                                             twit.getLastWebResponse(resp);
-//                                            cout << resp << endl;
                                             Json::Value root;
                                             Json::Reader json;
                                             bool parsed = json.parse(resp, root, false);
-                                            replace(editedTweet, searchTweet.substr(0, endIdx+1), root["name"].asString());
+                                            replaceAll(editedTweet, searchTweet.substr(0, endIdx+1), root["name"].asString());
                                         }
                                         searchTweet = searchTweet.substr(endIdx);
                                         
                                     }
                                     rtrim(editedTweet);
-//                                    cout << editedTweet.at(editedTweet.length()-1) << endl;
+
+                                    if(editedTweet.back() == ':' || editedTweet.back() == '.'){
+                                        editedTweet.pop_back();
+                                    }
+                                  
                                     editedTweet += "...  ";
+                                  
                                     float fontNameWidth = mTextureFont->measureString( editedTweet ).x;
-//                                        cout << editedTweet << endl;
+                                    
+                                    cout << editedTweet << endl;
                                     if(mRandom) {
                                         mTweets[Rand::randInt(0, mTweets.size())].push_back({editedTweet, fontNameWidth});
                                     } else {
@@ -302,6 +315,7 @@ void GetHeadlinesApp::getTweets()
                 if(!mRandom) {
                     mTweets.push_back(temp);
                 }
+            }
             }
         }
     }
@@ -391,12 +405,14 @@ void GetHeadlinesApp::rtrim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 }
 
-bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const std::string& to) {
-    size_t start_pos = str.find(from);
-    if(start_pos == std::string::npos)
-        return false;
-    str.replace(start_pos, from.length(), to);
-    return true;
+void GetHeadlinesApp::replaceAll(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        size_t end_pos = start_pos + from.length();
+        str.replace(start_pos, from.length(), to);
+        
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
 }
 
 // TODO - put joke tweets back in randomly once looping is figured out and put NY1 back in
