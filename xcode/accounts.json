@@ -53,10 +53,10 @@
 		 	"logo": "SpectrumNewsNY1Logo.png" 
 		}
 	],
-	"keywords": ["Donald", "Trump", "Flint", "Sessions", "Healthcare", "POTUS", "Syrians", "Syria", "Senate", "GOP", "Republicans", "Democrats", "President", "health care", "president", "ObamaCare", "Obama", "N. Korea", "Senators", "Congress", "Putin", "Hillary", "Pelosi", "McConnell", "Brexit", "immigration", "Conway", "Hamburg", "immigrants", "Kushner", "migrants", "Scaramucci", "Iraq", "cybersecurity", "Mueller", "collude", "FBI", "Pentagon"],
+	"keywords": ["Donald", "Trump", "Flint", "Sessions", "Healthcare", "POTUS", "Syrians", "Syria", "Senate", "GOP", "Republicans", "Democrats", "President", "health care", "president", "ObamaCare", "Obama", "N. Korea", "Senators", "Congress", "Putin", "Hillary", "Pelosi", "McConnell", "Brexit", "immigration", "Conway", "Hamburg", "immigrants", "Kushner", "migrants", "Scaramucci", "Iraq", "cybersecurity", "Mueller", "collude", "FBI", "Pentagon", "Sasse", "ambassador", "Russia", "Scalise"],
 	"fullscreen": true,
 	"includeRTs": false,
-	"tweetCount": 60,
+	"tweetCount": 40,
 	"tweetCountNY1": 170,
 	"backgroundImage": "FlagTwitterBase.png",
 	"starsImage": "flag2.png",

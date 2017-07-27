@@ -72,6 +72,9 @@ class GetHeadlinesApp : public App {
     // for offsets once you start moving tweets
     // TODO - initalize to all zeros
     int eraseOffsets[13];
+    
+    // keep track of the different speeds for ea line
+//    float widthPosOffset[13];
 };
 
 void GetHeadlinesApp::setup()
@@ -136,7 +139,8 @@ void GetHeadlinesApp::setup()
     mParams->addButton("Update", [ & ]() { getTweets(); },	"key=u" );
     
     // Font used on news ticker for Fox
-    mFont = Font( "Avenir", 36 );
+//    mFont = Font( "Avenir", 36 );
+    mFont = Font( loadResource( "Gotham-Bold.ttf" ), 40 );
     mTextureFont = gl::TextureFont::create( mFont );
     
     string line;
@@ -169,7 +173,7 @@ void GetHeadlinesApp::setup()
     if( ! path.empty() ) {
 //        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
 //        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
-        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(300);
+        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(150);
 
         mMovieExporter = qtime::MovieWriter::create( path, getWindowWidth(), getWindowHeight(), format );
     }
@@ -191,11 +195,12 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-//            if(a == "RT_America"){
+//            if(a == "bpolitics"){
             // if NY1 change the tweet count to include more tweets
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
             }
+                
             if(twit.timelineUserGet(true, includeRTs, tweetCount, a)) {
                 cout << a << endl;
                 list<pair<string,int>> temp;
@@ -204,16 +209,20 @@ void GetHeadlinesApp::getTweets()
                 Json::Reader json;
                 bool parsed = json.parse(resp, root, false);
                 
+//                cout << root << endl;
+                
                 if(!parsed) {
                     console() << json.getFormattedErrorMessages() << endl;
                 } else {
                     for(auto s: root)
                     {
                         std::string tweet = s["text"].asString();
+    
                         // get rid of retweets (using false as a parameter doesn't get rid of quoted RTs)
                         if (tweet.substr(0,2) == "RT") {
                             continue;
                         }
+                        
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -266,7 +275,6 @@ void GetHeadlinesApp::getTweets()
                                     }
                                     
                                     // TODO - can this be condensed?
-                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
                                     // shortened urls
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\246'), editedTweet.end());
@@ -276,8 +284,11 @@ void GetHeadlinesApp::getTweets()
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\200'), editedTweet.end());
                                     // remove $ because Cinder doesn't render that symbol (I filed an issue - https://github.com/cinder/Cinder/issues/1880)
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '$'), editedTweet.end());
+                                    // remove vertical pipe
+                                    editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\174'), editedTweet.end());
                                     
                                     // clean up escape sequence (ie curly quotes, etc)
+                                    replaceAll(editedTweet, "\n", " ");
                                     replaceAll(editedTweet, "\230", "'");
                                     replaceAll(editedTweet, "\231", "'");
                                     replaceAll(editedTweet, "\223", "-");
@@ -288,6 +299,12 @@ void GetHeadlinesApp::getTweets()
                                     replaceAll(editedTweet, "\202\254", "");
                                     // remove registered mark
                                     replaceAll(editedTweet, "\302\256", "");
+                                    // remove american flag icon
+                                    replaceAll(editedTweet, "\xF0\x9F\x87\xBA\xF0\x9F\x87\xB8", "");
+                                    
+                                    if(editedTweet.find("\174") != std::string::npos) {
+                                        cout << "found it" << endl;
+                                    }
                                     
                                     rtrim(editedTweet);
 
@@ -393,7 +410,7 @@ void GetHeadlinesApp::draw()
         counter++;
     }
     
-    widthPosOffset+=2;
+    widthPosOffset+=3;
     
     if(mShowFlag) {
         // draw stars over tweets to create illusion that it's getting cut off

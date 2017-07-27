@@ -18,6 +18,8 @@
 		00B9955B1B128DF400A5C623 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B995591B128DF400A5C623 /* IOSurface.framework */; };
 		4665ADB41EDDFEE900196596 /* libtwitcurl.so.1.0 in Frameworks */ = {isa = PBXBuildFile; fileRef = 4665ADB31EDDFEE900196596 /* libtwitcurl.so.1.0 */; };
 		4665ADB71EE7788700196596 /* keys.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4665ADB61EE7788700196596 /* keys.txt */; };
+		46D384511F28FA5F00CB6503 /* GothamRnd-Book.otf in Resources */ = {isa = PBXBuildFile; fileRef = 46D384501F28FA5F00CB6503 /* GothamRnd-Book.otf */; };
+		46D384531F28FAD000CB6503 /* Gotham-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 46D384521F28FAD000CB6503 /* Gotham-Bold.ttf */; };
 		5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B10EAFCA74003A9687 /* CoreVideo.framework */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		94DFE496BFCA4C34AC014980 /* GetHeadlinesApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E0CB999C67AB4391B6052952 /* GetHeadlinesApp.cpp */; };
@@ -53,6 +55,8 @@
 		45D6324810E24262963EE2E1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4665ADB31EDDFEE900196596 /* libtwitcurl.so.1.0 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtwitcurl.so.1.0; path = ../../../../../twitcurl/libtwitcurl/libtwitcurl.so.1.0; sourceTree = "<group>"; };
 		4665ADB61EE7788700196596 /* keys.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keys.txt; sourceTree = "<group>"; };
+		46D384501F28FA5F00CB6503 /* GothamRnd-Book.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GothamRnd-Book.otf"; sourceTree = "<group>"; };
+		46D384521F28FAD000CB6503 /* Gotham-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Gotham-Bold.ttf"; sourceTree = "<group>"; };
 		5323E6B10EAFCA74003A9687 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		8D1107320486CEB800E47090 /* GetHeadlines.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GetHeadlines.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8296B492BD04CE7BD69B5F4 /* CinderApp.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = CinderApp.icns; path = ../resources/CinderApp.icns; sourceTree = "<group>"; };
@@ -161,6 +165,8 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				46D384521F28FAD000CB6503 /* Gotham-Bold.ttf */,
+				46D384501F28FA5F00CB6503 /* GothamRnd-Book.otf */,
 				B8296B492BD04CE7BD69B5F4 /* CinderApp.icns */,
 				45D6324810E24262963EE2E1 /* Info.plist */,
 			);
@@ -237,7 +243,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46D384531F28FAD000CB6503 /* Gotham-Bold.ttf in Resources */,
 				E83C0C30EF1E4431B603298E /* CinderApp.icns in Resources */,
+				46D384511F28FA5F00CB6503 /* GothamRnd-Book.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
