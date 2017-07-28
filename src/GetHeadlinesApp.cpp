@@ -19,24 +19,24 @@ using namespace std;
 class GetHeadlinesApp : public App {
   public:
 	void setup() override;
-    void keyDown(KeyEvent event) override;
+//    void keyDown(KeyEvent event) override;
 	void update() override;
 	void draw() override;
     void rtrim(std::string &s);
     void replaceAll(std::string& str, const std::string& from, const std::string& to);
-    bool replace(std::string& str, const std::string& from, const std::string& to);
+//    bool replace(std::string& str, const std::string& from, const std::string& to);
     
     void getTweets();
     
     // background image
     gl::TextureRef mBackground;
     // star image
-    gl::TextureRef mStars;
-    bool mShowFlag;
+//    gl::TextureRef mStars;
+//    bool mShowFlag;
     // logos
 //    vector<gl::TextureRef> mLogos;
     
-    string tempKeyword;
+//    string tempKeyword;
     // this will contain which keywords we are searching for
     vector<string> mKeywords;
     // this will contain which accounts we query
@@ -46,12 +46,12 @@ class GetHeadlinesApp : public App {
     Font mFont;
     gl::TextureFontRef	mTextureFont;
     
-    params::InterfaceGlRef mParams;
-    bool mShowParams;
+//    params::InterfaceGlRef mParams;
+//    bool mShowParams;
     
     twitCurl twit;
     vector<list<pair<string, int>>> mTweets;
-    bool mUseKeywords = true;
+//    bool mUseKeywords = true;
     
     // hold keys for Twitter API oauth
     vector<string> keys;
@@ -96,27 +96,27 @@ void GetHeadlinesApp::setup()
     if (inputFile.is_open()) {
         inputFile >> root;
         
-        mShowFlag = root["showFlag"].asBool();
+//        mShowFlag = root["showFlag"].asBool();
         includeRTs = root["includeRTs"].asBool();
         tweetCount = root["tweetCount"].asInt();
         nyTweetCount = root["tweetCountNY1"].asInt();
-        mShowParams = root["showParams"].asBool();
+//        mShowParams = root["showParams"].asBool();
     
-        setFullScreen(false);
+//        setFullScreen(false);
         
         //setFullScreen(root["fullscreen"].asBool());
         
         // load our flag images if we are showing the flag
-        if(mShowFlag) {
+//        if(mShowFlag) {
             try {
             mBackground = gl::Texture::create( loadImage( loadAsset(root["backgroundImage"].asString()) ) );
             // load just the stars
-            mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
+//            mStars = gl::Texture::create( loadImage( loadAsset(root["starsImage"].asString())));
             }
             catch( Exception &exc ) {
                 cout << "cannot load flag images" << endl;
             }
-        }
+//        }
     
         // load twitter handles
         for(auto a: root["accounts"]){
@@ -135,13 +135,13 @@ void GetHeadlinesApp::setup()
     stripeHeight = (getWindowHeight()*.935)/13;
 
     // Create the interface and give it a name
-    mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
+//    mParams = params::InterfaceGl::create("App parameters", vec2(200,200));
     
     // Set up some basic parameters
-    mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword); getTweets();} );
-    mParams->addParam("Filter", &mUseKeywords).updateFn( [this] {getTweets();});
-    mParams->addParam("Show Params", &mShowParams).key("p");
-    mParams->addButton("Update", [ & ]() { getTweets(); },	"key=u" );
+//    mParams->addParam( "New Keyword", &tempKeyword ).updateFn( [this] { mKeywords.push_back(tempKeyword); getTweets();} );
+//    mParams->addParam("Filter", &mUseKeywords).updateFn( [this] {getTweets();});
+//    mParams->addParam("Show Params", &mShowParams).key("p");
+//    mParams->addButton("Update", [ & ]() { getTweets(); },	"key=u" );
     
     // Font used on news ticker for Fox
 //    mFont = Font( "Avenir", 36 );
@@ -227,7 +227,7 @@ void GetHeadlinesApp::getTweets()
                         }
                         
                         // only filter if using keywords
-                        if(mUseKeywords) {
+//                        if(mUseKeywords) {
                             for(string k: mKeywords){
                                 if (tweet.find(k) != std::string::npos) {
                                     // remove hyperlinks
@@ -323,14 +323,14 @@ void GetHeadlinesApp::getTweets()
                                     break;
                                 }
                             }
-                        } else {
+//                        } else {
                             // TODO - abstract most of the stuff in the if so it applies to both if and else
                             // remove hyperlinks
-                            string editedTweet = regex_replace(tweet, reg, "");
-                            editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
-                            float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
-                            temp.push_back(make_pair(editedTweet, fontNameWidth));
-                        }
+//                            string editedTweet = regex_replace(tweet, reg, "");
+//                            editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '\n'), editedTweet.end());
+//                            float fontNameWidth = mTextureFont->measureString( editedTweet+"..." ).x;
+//                            temp.push_back(make_pair(editedTweet, fontNameWidth));
+//                        }
                     }
                 }
                 if(!mRandom) {
@@ -347,14 +347,14 @@ void GetHeadlinesApp::getTweets()
     }
 }
 
-void GetHeadlinesApp::keyDown(KeyEvent event)
-{
-    // toggle on and off using keywords
-    if (event.getChar() == 'k') {
-        mUseKeywords = !mUseKeywords;
-        getTweets();
-    }
-}
+//void GetHeadlinesApp::keyDown(KeyEvent event)
+//{
+//    // toggle on and off using keywords
+//    if (event.getChar() == 'k') {
+//        mUseKeywords = !mUseKeywords;
+//        getTweets();
+//    }
+//}
 
 void GetHeadlinesApp::update()
 {
@@ -411,6 +411,9 @@ void GetHeadlinesApp::draw()
         widthPosOffset[i]+=speed[i];
     }
     
+    gl::drawString( "Framerate: " + toString(getAverageFps()), vec2( 10.0f, 10.0f ), Color::white(), mFont );
+
+    
 //    if(mShowFlag) {
 //        // draw stars over tweets to create illusion that it's getting cut off
 //        gl::color(Color::white());
@@ -436,13 +439,13 @@ void GetHeadlinesApp::replaceAll(std::string& str, const std::string& from, cons
     }
 }
 
-bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const std::string& to) {
-    size_t start_pos = str.find(from);
-    if(start_pos == std::string::npos)
-        return false;
-    str.replace(start_pos, from.length(), to);
-    return true;
-}
+//bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const std::string& to) {
+//    size_t start_pos = str.find(from);
+//    if(start_pos == std::string::npos)
+//        return false;
+//    str.replace(start_pos, from.length(), to);
+//    return true;
+//}
 
 // TODO - put joke tweets back in randomly once looping is figured out and put NY1 back in
 // TODO - clickable app that can work on any comp
