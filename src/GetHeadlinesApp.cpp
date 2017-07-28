@@ -58,12 +58,13 @@ class GetHeadlinesApp : public App {
     
     int stripeHeight;
     int widthPos = 0;
-    int widthPosOffset = 0;
     
     bool includeRTs;
     int tweetCount;
     int nyTweetCount;
     bool mRandom;
+    
+    bool erased;
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
@@ -74,12 +75,16 @@ class GetHeadlinesApp : public App {
     int eraseOffsets[13];
     
     // keep track of the different speeds for ea line
-//    float widthPosOffset[13];
+    // 13 for 13 stripes, 2 - one for the acculmative offset and one for the initial amount that will increment it
+    float widthPosOffset[13];
+    
+    float speed[13] = {1.0,3.75,2.25,4.25,1.75,2.75,3.5,2.0,4.15,3.0,2.25,3.75,4.75};
 };
 
 void GetHeadlinesApp::setup()
 {
     std::fill_n(eraseOffsets, 13, 0);
+    std::fill_n(widthPosOffset, 13, 0.0);
     
     gl::clear(Color(0, 0, 0));
     gl::enableAlphaBlending(false);
@@ -171,9 +176,7 @@ void GetHeadlinesApp::setup()
     fs::path path = getSaveFilePath();
     // TODO - if green use h.264 codec
     if( ! path.empty() ) {
-//        auto format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::H264 ).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE )
-//        .jpegQuality( 0.09f ).averageBitsPerSecond( 10000000 );
-        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_4444).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(150);
+        format = qtime::MovieWriter::Format().codec( qtime::MovieWriter::PRO_RES_422).fileType( qtime::MovieWriter::QUICK_TIME_MOVIE ).setTimeScale(600).jpegQuality(0.9f);
 
         mMovieExporter = qtime::MovieWriter::create( path, getWindowWidth(), getWindowHeight(), format );
     }
@@ -222,7 +225,6 @@ void GetHeadlinesApp::getTweets()
                         if (tweet.substr(0,2) == "RT") {
                             continue;
                         }
-                        
                         
                         // only filter if using keywords
                         if(mUseKeywords) {
@@ -302,21 +304,17 @@ void GetHeadlinesApp::getTweets()
                                     // remove american flag icon
                                     replaceAll(editedTweet, "\xF0\x9F\x87\xBA\xF0\x9F\x87\xB8", "");
                                     
-                                    if(editedTweet.find("\174") != std::string::npos) {
-                                        cout << "found it" << endl;
-                                    }
-                                    
                                     rtrim(editedTweet);
 
                                     if(editedTweet.back() == ':' || editedTweet.back() == '.'){
                                         editedTweet.pop_back();
                                     }
                                   
-                                    editedTweet += "...  ";
+                                    editedTweet += "  ...   ";
                                   
                                     float fontNameWidth = mTextureFont->measureString( editedTweet ).x;
                                     
-                                    cout << editedTweet << endl;
+//                                    cout << editedTweet << endl;
                                     if(mRandom) {
                                         mTweets[Rand::randInt(0, mTweets.size())].push_back({editedTweet, fontNameWidth});
                                     } else {
@@ -371,56 +369,57 @@ void GetHeadlinesApp::update()
 
 void GetHeadlinesApp::draw()
 {
-    if(mShowFlag) {
-        gl::clear(Color::black());
+//    if(mShowFlag) {
         gl::color(Color::white());
+        gl::clear(Color::black());
         gl::draw( mBackground, getWindowBounds() );
-    } else{
+//    } else{
         // TODO - does 0,0,0,0 work in syphon?
-        gl::clear(Color(0,1,0));
-    }
+//        gl::clear(Color(0,1,0));
+//    }
 
     int counter = 0;
     
     // TODO - send to Syphon
     // TODO - Syphon to isadora
-    bool itHappened = false;
     for(vector<list<pair<string, int>>>::iterator iter1 = mTweets.begin(); iter1 != mTweets.end(); iter1++) {
         (counter >= 7) ? widthPos = 10 : widthPos = getWindowWidth() * .4 - 20;
             widthPos += eraseOffsets[counter];
         for(list<pair<string,int>>::iterator iter2 = iter1->begin(); iter2 != iter1->end();) {
             (counter%2==0) ? gl::color( Color::white() ) : gl::color( Color::black() );
-            bool erased = false;
+            erased = false;
             // if tweet goes offscreen, send it to the back of the list
-            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset+20) * -1) > iter2->second) {
+            if(iter2 == iter1->begin() && ((widthPos-widthPosOffset[counter]+20) * -1) > iter2->second) {
                 eraseOffsets[counter] += iter2->second;
                 widthPos += iter2->second;
                 auto x = *iter2;
                 iter2 = iter1->erase(iter2);
                 erased = true;
-                itHappened = true;
                 iter1->insert(iter1->end(), x);
             }
             if(!erased) {
-                mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
+                mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset[counter]+20, counter*stripeHeight+60+(getWindowHeight()*.065)));
+//                mTextureFont->drawString(iter2->first, vec2(widthPos-widthPosOffset[counter]+20, counter*stripeHeight+43+(getWindowHeight()*.065)));
                 widthPos+=iter2->second;
                 ++iter2;
             }
         }
         counter++;
     }
-    
-    widthPosOffset+=3;
-    
-    if(mShowFlag) {
-        // draw stars over tweets to create illusion that it's getting cut off
-        gl::color(Color::white());
-        Rectf drawRect( 0, 0, getWindowWidth()*.4, getWindowHeight()*.572);
-        gl::draw(mStars, drawRect);
+
+    for(int i=0; i<13; i++) {
+        widthPosOffset[i]+=speed[i];
     }
     
+//    if(mShowFlag) {
+//        // draw stars over tweets to create illusion that it's getting cut off
+//        gl::color(Color::white());
+//        Rectf drawRect( 0, 0, getWindowWidth()*.4, getWindowHeight()*.572);
+//        gl::draw(mStars, drawRect);
+//    }
+    
     // Draw the interface
-    if(mShowParams) { mParams->draw(); }
+//    if(mShowParams) { mParams->draw(); }
 }
 
 // trim from end
@@ -431,7 +430,6 @@ void GetHeadlinesApp::rtrim(std::string &s) {
 void GetHeadlinesApp::replaceAll(std::string& str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        size_t end_pos = start_pos + from.length();
         str.replace(start_pos, from.length(), to);
         
         start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
@@ -457,6 +455,7 @@ bool GetHeadlinesApp::replace(std::string& str, const std::string& from, const s
 
 CINDER_APP( GetHeadlinesApp, RendererGl, [&](App::Settings *settings) {
     
+//    settings->setWindowSize(1280, 720);
     settings->setWindowSize(1920, 1080);
     // have the app run full screen in second monitor (if available)
     vector<DisplayRef> displays = Display::getDisplays();
