@@ -198,7 +198,7 @@ void GetHeadlinesApp::getTweets()
     if(twit.accountVerifyCredGet())
     {
         for(string a: mAccounts) {
-//            if(a == "bpolitics"){
+//            if(a == "MSNBC"){
             // if NY1 change the tweet count to include more tweets
             if(a == "NY1") {
                 tweetCount = nyTweetCount;
@@ -230,6 +230,7 @@ void GetHeadlinesApp::getTweets()
 //                        if(mUseKeywords) {
                             for(string k: mKeywords){
                                 if (tweet.find(k) != std::string::npos) {
+
                                     // remove hyperlinks
                                     // TODO - remove duplicate tweets from same news source
                                     string editedTweet = regex_replace(tweet, reg, "");
@@ -240,12 +241,17 @@ void GetHeadlinesApp::getTweets()
 
                                     editedTweet = editedTweet.substr(0, editedTweet.find("[VIDEO]", 0));
                                     replaceAll(editedTweet, "&amp;", "&");
+
                                 
                                     // go through and change all handles to actual names w/ twitter api
                                     string searchTweet = editedTweet;
                                     while (searchTweet.find('@') != std::string::npos) {
                                         searchTweet = searchTweet.substr(searchTweet.find("@"));
                                         int endIdx = 0;
+                                        if(searchTweet.at(1) == ' ') {
+                                            searchTweet = searchTweet.substr(2);
+                                            continue;
+                                        }
                                         if(searchTweet.find(" ") != std::string::npos) {
                                             endIdx = searchTweet.find(" ")-1;
                                         } else {
@@ -273,8 +279,8 @@ void GetHeadlinesApp::getTweets()
                                             replaceAll(editedTweet, searchTweet.substr(0, endIdx+1), root["name"].asString());
                                         }
                                         searchTweet = searchTweet.substr(endIdx);
-                                        
                                     }
+
                                     
                                     // TODO - can this be condensed?
                                     editedTweet.erase(std::remove(editedTweet.begin(), editedTweet.end(), '#'), editedTweet.end());
@@ -411,7 +417,7 @@ void GetHeadlinesApp::draw()
         widthPosOffset[i]+=speed[i];
     }
     
-    gl::drawString( "Framerate: " + toString(getAverageFps()), vec2( 10.0f, 10.0f ), Color::white(), mFont );
+//    gl::drawString( "Framerate: " + toString(getAverageFps()), vec2( 10.0f, 10.0f ), Color::white(), mFont );
 
     
 //    if(mShowFlag) {
