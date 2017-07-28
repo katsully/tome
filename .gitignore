@@ -35,3 +35,6 @@
 
 keys.txt
 *.DS_Store
+
+DerivedData/
+build/
