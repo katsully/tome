@@ -68,7 +68,7 @@ class GetHeadlinesApp : public App {
     
     qtime::MovieWriterRef mMovieExporter;
     qtime::MovieWriter::Format format;
-    const int maxFrames = 18000;     // 10 minutes
+    const int maxFrames = 28800;     // 8 minutes
     
     // for offsets once you start moving tweets
     // TODO - initalize to all zeros
@@ -370,6 +370,7 @@ void GetHeadlinesApp::update()
     else if( mMovieExporter && getElapsedFrames() >= maxFrames ) {
         mMovieExporter->finish();
         mMovieExporter.reset();
+        cout << "~~~~~~DONE~~~~~~~~" << endl;
     }
 }
 
